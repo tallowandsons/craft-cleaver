@@ -6,6 +6,7 @@ use Craft;
 use craft\base\Model;
 use craft\base\Plugin;
 use tallowandsons\cleaver\models\Settings;
+use tallowandsons\cleaver\services\ChopService;
 
 /**
  * cleaver plugin
@@ -15,6 +16,7 @@ use tallowandsons\cleaver\models\Settings;
  * @author tallowandsons <support@tallowandsons.com>
  * @copyright tallowandsons
  * @license https://craftcms.github.io/license/ Craft License
+ * @property-read ChopService $chopService
  */
 class Cleaver extends Plugin
 {
@@ -24,9 +26,7 @@ class Cleaver extends Plugin
     public static function config(): array
     {
         return [
-            'components' => [
-                // Define component configs here...
-            ],
+            'components' => ['chopService' => ChopService::class],
         ];
     }
 
