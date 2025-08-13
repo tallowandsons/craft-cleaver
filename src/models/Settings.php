@@ -15,11 +15,18 @@ class Settings extends Model
      */
     public int $defaultPercent = 90;
 
+    /**
+     * The minimum number of entries to keep per section (regardless of percentage)
+     */
+    public int $minimumEntries = 1;
+
     public function defineRules(): array
     {
         return [
             ['defaultPercent', 'integer', 'min' => 1, 'max' => 99],
             ['defaultPercent', 'default', 'value' => 90],
+            ['minimumEntries', 'integer', 'min' => 0],
+            ['minimumEntries', 'default', 'value' => 1],
         ];
     }
 }

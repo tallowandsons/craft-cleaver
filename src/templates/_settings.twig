@@ -3,4 +3,25 @@
 
 {% import '_includes/forms.twig' as forms %}
 
-{# ... #}
+{{ forms.numberField({
+    label: 'Default Percentage'|t('cleaver'),
+    instructions: 'The default percentage of entries to delete when no percentage is specified in the console command.'|t('cleaver'),
+    id: 'defaultPercent',
+    name: 'defaultPercent',
+    value: settings.defaultPercent,
+    min: 1,
+    max: 99,
+    required: true,
+    errors: settings.getErrors('defaultPercent')
+}) }}
+
+{{ forms.numberField({
+    label: 'Minimum Entries'|t('cleaver'),
+    instructions: 'The minimum number of entries to keep per section, regardless of deletion percentage. Set to 0 to allow complete deletion.'|t('cleaver'),
+    id: 'minimumEntries',
+    name: 'minimumEntries',
+    value: settings.minimumEntries,
+    min: 0,
+    required: true,
+    errors: settings.getErrors('minimumEntries')
+}) }}

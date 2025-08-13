@@ -5,6 +5,7 @@ namespace tallowandsons\cleaver\services;
 use Craft;
 use craft\elements\Entry;
 use craft\models\Section;
+use tallowandsons\cleaver\Cleaver;
 use tallowandsons\cleaver\jobs\ChopEntriesJob;
 use yii\base\Component;
 
@@ -16,23 +17,23 @@ class ChopService extends Component
     /**
      * Chop entries from the specified sections
      */
-    public function chopEntries(array $sections, int $percent): void
+    public function chopEntries(array $sections, int $percent, ?int $minimumEntries = null): void
     {
         foreach ($sections as $section) {
-            $this->chopEntriesFromSection($section, $percent);
+            $this->chopEntriesFromSection($section, $percent, $minimumEntries);
         }
     }
 
     /**
      * Chop entries from a specific section while preserving status distribution
      */
-    private function chopEntriesFromSection(Section $section, int $percent): void
+    private function chopEntriesFromSection(Section $section, int $percent, ?int $minimumEntries = null): void
     {
         // Get all unique statuses in this section
         $statuses = $this->getUniqueStatusesInSection($section);
 
         foreach ($statuses as $status) {
-            $entriesToDelete = $this->selectEntriesToDelete($section, $status, $percent);
+            $entriesToDelete = $this->selectEntriesToDelete($section, $status, $percent, $minimumEntries);
 
             if (!empty($entriesToDelete)) {
                 $this->queueDeletionJob($entriesToDelete, $section->handle, $status);
@@ -60,7 +61,7 @@ class ChopService extends Component
     /**
      * Select entries to delete from a section with a specific status
      */
-    private function selectEntriesToDelete(Section $section, string $status, int $percent): array
+    private function selectEntriesToDelete(Section $section, string $status, int $percent, ?int $minimumEntries = null): array
     {
         // Get all entries with this status
         $totalEntries = Entry::find()
@@ -72,8 +73,18 @@ class ChopService extends Component
             return [];
         }
 
-        // Calculate how many to delete
+        // Get the minimum entries setting (use override if provided)
+        if ($minimumEntries === null) {
+            $settings = Cleaver::getInstance()->getSettings();
+            $minimumEntries = $settings->minimumEntries;
+        }
+
+        // Calculate how many to delete based on percentage
         $entriesToDeleteCount = (int) ceil($totalEntries * ($percent / 100));
+
+        // Ensure we don't delete more than we should to maintain minimum
+        $maxDeletions = max(0, $totalEntries - $minimumEntries);
+        $entriesToDeleteCount = min($entriesToDeleteCount, $maxDeletions);
 
         if ($entriesToDeleteCount === 0) {
             return [];

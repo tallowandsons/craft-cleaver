@@ -27,6 +27,11 @@ class ChopController extends Controller
     public ?int $percent = null;
 
     /**
+     * Minimum number of entries to keep per section
+     */
+    public ?int $minEntries = null;
+
+    /**
      * Skip confirmation prompt
      */
     public bool $skipConfirm = false;
@@ -38,6 +43,7 @@ class ChopController extends Controller
             case 'index':
                 $options[] = 'sections';
                 $options[] = 'percent';
+                $options[] = 'minEntries';
                 $options[] = 'skipConfirm';
                 break;
         }
@@ -49,12 +55,17 @@ class ChopController extends Controller
         return [
             's' => 'sections',
             'p' => 'percent',
+            'm' => 'minEntries',
             'y' => 'skipConfirm',
         ];
     }
 
     /**
      * Randomly delete entries from sections while preserving entry status distribution
+     *
+     * The command respects a minimum entries constraint to prevent complete deletion
+     * of all entries from a section. This can be configured in plugin settings or
+     * overridden using the --min-entries option.
      */
     public function actionIndex(): int
     {
@@ -77,6 +88,12 @@ class ChopController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
+        // Validate minimum entries if provided
+        if ($this->minEntries !== null && $this->minEntries < 0) {
+            $this->stderr("Error: Minimum entries must be 0 or greater.\n", Console::FG_RED);
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+
         // Display summary and get confirmation
         if (!$this->confirmDeletion($targetSections, $deletePercent)) {
             $this->stdout("Operation cancelled.\n", Console::FG_YELLOW);
@@ -85,7 +102,7 @@ class ChopController extends Controller
 
         // Execute the chop operation
         try {
-            $plugin->chopService->chopEntries($targetSections, $deletePercent);
+            $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries);
             $this->stdout("Chop operation has been queued successfully.\n", Console::FG_GREEN);
             return ExitCode::OK;
         } catch (\Exception $e) {
@@ -128,17 +145,36 @@ class ChopController extends Controller
             return true;
         }
 
+        $plugin = Cleaver::getInstance();
+        $settings = $plugin->getSettings();
+        $minimumEntries = $this->minEntries ?? $settings->minimumEntries;
+
         $this->stdout("\nCleaver Deletion Summary:\n", Console::FG_CYAN);
-        $this->stdout(str_repeat("=", 50) . "\n");
+        $this->stdout(str_repeat("=", 60) . "\n");
 
         foreach ($sections as $section) {
             $totalEntries = Entry::find()->sectionId($section->id)->count();
-            $entriesToDelete = (int) ceil($totalEntries * ($percent / 100));
-            $this->stdout("Section '{$section->handle}': {$entriesToDelete} of {$totalEntries} entries ({$percent}%)\n");
+            $requestedDeletions = (int) ceil($totalEntries * ($percent / 100));
+            $maxPossibleDeletions = max(0, $totalEntries - $minimumEntries);
+            $actualDeletions = min($requestedDeletions, $maxPossibleDeletions);
+
+            $this->stdout("Section '{$section->handle}': ");
+            $this->stdout("{$actualDeletions} of {$totalEntries} entries");
+
+            if ($actualDeletions < $requestedDeletions) {
+                $this->stdout(" (limited by minimum: {$minimumEntries})", Console::FG_YELLOW);
+            }
+
+            $this->stdout("\n");
         }
 
-        $this->stdout(str_repeat("=", 50) . "\n");
+        $this->stdout(str_repeat("=", 60) . "\n");
         $this->stdout("Cleaver is about to delete {$percent}% of entries from the selected sections.\n", Console::FG_YELLOW);
+        $this->stdout("Minimum entries per section: {$minimumEntries}", Console::FG_CYAN);
+        if ($this->minEntries !== null) {
+            $this->stdout(" (overridden)", Console::FG_YELLOW);
+        }
+        $this->stdout("\n");
 
         return $this->confirm("Do you want to proceed?");
     }
