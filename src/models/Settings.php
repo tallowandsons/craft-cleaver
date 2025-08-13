@@ -11,6 +11,12 @@ use craft\base\Model;
 class Settings extends Model
 {
     /**
+     * Delete mode constants
+     */
+    public const DELETE_MODE_SOFT = 'soft';
+    public const DELETE_MODE_HARD = 'hard';
+
+    /**
      * The default percentage of entries to delete when no percentage is specified
      */
     public int $defaultPercent = 90;
@@ -30,6 +36,11 @@ class Settings extends Model
      */
     public int $batchSize = 50;
 
+    /**
+     * The delete mode for entries (soft or hard delete)
+     */
+    public string $deleteMode = self::DELETE_MODE_SOFT;
+
     public function defineRules(): array
     {
         return [
@@ -41,6 +52,8 @@ class Settings extends Model
             ['allowedEnvironments', 'default', 'value' => ['dev', 'staging', 'local']],
             ['batchSize', 'integer', 'min' => 1, 'max' => 1000],
             ['batchSize', 'default', 'value' => 50],
+            ['deleteMode', 'in', 'range' => [self::DELETE_MODE_SOFT, self::DELETE_MODE_HARD]],
+            ['deleteMode', 'default', 'value' => self::DELETE_MODE_SOFT],
         ];
     }
 

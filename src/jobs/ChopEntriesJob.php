@@ -5,9 +5,9 @@ namespace tallowandsons\cleaver\jobs;
 use Craft;
 use craft\base\Batchable;
 use craft\elements\Entry;
-use craft\helpers\Queue as QueueHelper;
 use craft\queue\BaseBatchedElementJob;
 use tallowandsons\cleaver\Cleaver;
+use tallowandsons\cleaver\models\Settings;
 use yii\queue\RetryableJobInterface;
 
 /**
@@ -86,7 +86,10 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         }
 
         // Delete the entry
-        if (!Craft::$app->getElements()->deleteElement($entry, true)) {
+        $settings = Cleaver::getInstance()->getSettings();
+        $hardDelete = ($settings->deleteMode === Settings::DELETE_MODE_HARD);
+
+        if (!Craft::$app->getElements()->deleteElement($entry, $hardDelete)) {
             throw new \Exception("Failed to delete entry ID: {$entryId}");
         }
     }

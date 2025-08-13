@@ -39,7 +39,7 @@
 
 {{ forms.numberField({
     label: 'Batch Size'|t('cleaver'),
-    instructions: 'The number of entries to process in each batch. Larger batches process faster but use more memory. Can be overridden with --batch-size flag.'|t('cleaver'),
+    instructions: 'The number of entries to process in each batch. Larger batches process faster but use more memory.'|t('cleaver'),
     id: 'batchSize',
     name: 'batchSize',
     value: settings.batchSize,
@@ -47,4 +47,18 @@
     max: 1000,
     required: true,
     errors: settings.getErrors('batchSize')
+}) }}
+
+{{ forms.selectField({
+    label: 'Delete Mode'|t('cleaver'),
+    instructions: 'Choose between soft delete (entries can be restored) or hard delete (entries are permanently removed).'|t('cleaver'),
+    id: 'deleteMode',
+    name: 'deleteMode',
+    value: settings.deleteMode,
+    options: [
+        { value: 'soft', label: 'Soft Delete (Restorable)'|t('cleaver') },
+        { value: 'hard', label: 'Hard Delete (Permanent)'|t('cleaver') }
+    ],
+    required: true,
+    errors: settings.getErrors('deleteMode')
 }) }}
