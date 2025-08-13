@@ -17,20 +17,25 @@ class ChopService extends Component
     /**
      * Chop entries from the specified sections
      */
-    public function chopEntries(array $sections, int $percent, ?int $minimumEntries = null): void
+    public function chopEntries(array $sections, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null): void
     {
         foreach ($sections as $section) {
-            $this->chopEntriesFromSection($section, $percent, $minimumEntries);
+            $this->chopEntriesFromSection($section, $percent, $minimumEntries, $targetStatuses);
         }
     }
 
     /**
      * Chop entries from a specific section while preserving status distribution
      */
-    private function chopEntriesFromSection(Section $section, int $percent, ?int $minimumEntries = null): void
+    private function chopEntriesFromSection(Section $section, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null): void
     {
         // Get all unique statuses in this section
         $statuses = $this->getUniqueStatusesInSection($section);
+
+        // Filter statuses if target statuses are specified
+        if ($targetStatuses !== null) {
+            $statuses = array_intersect($statuses, $targetStatuses);
+        }
 
         foreach ($statuses as $status) {
             $entriesToDelete = $this->selectEntriesToDelete($section, $status, $percent, $minimumEntries);

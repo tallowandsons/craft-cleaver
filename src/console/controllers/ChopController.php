@@ -22,6 +22,11 @@ class ChopController extends Controller
     public ?string $sections = null;
 
     /**
+     * Comma-separated list of entry statuses to target (live, disabled, pending, etc)
+     */
+    public ?string $statuses = null;
+
+    /**
      * The percentage of entries to delete
      */
     public ?int $percent = null;
@@ -42,6 +47,7 @@ class ChopController extends Controller
         switch ($actionID) {
             case 'index':
                 $options[] = 'sections';
+                $options[] = 'statuses';
                 $options[] = 'percent';
                 $options[] = 'minEntries';
                 $options[] = 'skipConfirm';
@@ -54,6 +60,7 @@ class ChopController extends Controller
     {
         return [
             's' => 'sections',
+            'st' => 'statuses',
             'p' => 'percent',
             'm' => 'minEntries',
             'y' => 'skipConfirm',
@@ -96,6 +103,12 @@ class ChopController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
+        // Get target statuses
+        $targetStatuses = $this->getTargetStatuses();
+        if ($targetStatuses === []) {
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+
         // Validate minimum entries if provided
         if ($this->minEntries !== null && $this->minEntries < 0) {
             $this->stderr("Error: Minimum entries must be 0 or greater.\n", Console::FG_RED);
@@ -103,14 +116,14 @@ class ChopController extends Controller
         }
 
         // Display summary and get confirmation
-        if (!$this->confirmDeletion($targetSections, $deletePercent)) {
+        if (!$this->confirmDeletion($targetSections, $deletePercent, $targetStatuses)) {
             $this->stdout("Operation cancelled.\n", Console::FG_YELLOW);
             return ExitCode::OK;
         }
 
         // Execute the chop operation
         try {
-            $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries);
+            $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries, $targetStatuses);
             $this->stdout("Chop operation has been queued successfully.\n", Console::FG_GREEN);
             return ExitCode::OK;
         } catch (\Exception $e) {
@@ -145,9 +158,39 @@ class ChopController extends Controller
     }
 
     /**
+     * Get the target statuses based on the provided status names
+     */
+    private function getTargetStatuses(): ?array
+    {
+        if (!$this->statuses) {
+            return null; // Return null to indicate all statuses should be included
+        }
+
+        $statusNames = array_map('trim', explode(',', $this->statuses));
+        $validStatuses = [];
+        $availableStatuses = ['live', 'pending', 'disabled', 'expired'];
+
+        foreach ($statusNames as $status) {
+            $status = strtolower($status);
+            if (in_array($status, $availableStatuses)) {
+                $validStatuses[] = $status;
+            } else {
+                $this->stderr("Warning: Status '{$status}' is not valid. Valid statuses are: " . implode(', ', $availableStatuses) . "\n", Console::FG_YELLOW);
+            }
+        }
+
+        if (empty($validStatuses)) {
+            $this->stderr("Error: No valid statuses provided.\n", Console::FG_RED);
+            return [];
+        }
+
+        return $validStatuses;
+    }
+
+    /**
      * Display deletion summary and get user confirmation
      */
-    private function confirmDeletion(array $sections, int $percent): bool
+    private function confirmDeletion(array $sections, int $percent, ?array $targetStatuses = null): bool
     {
         if ($this->skipConfirm) {
             return true;
@@ -181,6 +224,14 @@ class ChopController extends Controller
         $this->stdout("Minimum entries per section: {$minimumEntries}", Console::FG_CYAN);
         if ($this->minEntries !== null) {
             $this->stdout(" (overridden)", Console::FG_YELLOW);
+        }
+        $this->stdout("\n");
+
+        if ($targetStatuses !== null) {
+            $this->stdout("Target statuses: " . implode(', ', $targetStatuses), Console::FG_CYAN);
+            $this->stdout(" (specified)", Console::FG_YELLOW);
+        } else {
+            $this->stdout("Target statuses: all statuses", Console::FG_CYAN);
         }
         $this->stdout("\n");
 
