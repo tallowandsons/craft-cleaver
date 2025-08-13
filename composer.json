@@ -1,0 +1,48 @@
+{
+  "name": "tallowandsons/craft-cleaver",
+  "description": "Cut your Craft CMS dataset down to size",
+  "type": "craft-plugin",
+  "license": "proprietary",
+  "support": {
+    "email": "support@tallowandsons.com",
+    "issues": "https://github.com/tallowandsons/craft-cleaver/issues?state=open",
+    "source": "https://github.com/tallowandsons/craft-cleaver",
+    "docs": "https://github.com/tallowandsons/craft-cleaver",
+    "rss": "https://github.com/tallowandsons/craft-cleaver/releases.atom"
+  },
+  "require": {
+    "php": ">=8.2",
+    "craftcms/cms": "^5.0.0"
+  },
+  "require-dev": {
+    "craftcms/ecs": "dev-main",
+    "craftcms/phpstan": "dev-main"
+  },
+  "autoload": {
+    "psr-4": {
+      "tallowandsons\\cleaver\\": "src/"
+    }
+  },
+  "extra": {
+    "handle": "cleaver",
+    "name": "cleaver",
+    "developer": "tallowandsons",
+    "documentationUrl": "https://github.com/tallowandsons/craft-cleaver",
+    "class": "tallowandsons\\cleaver\\Cleaver"
+  },
+  "scripts": {
+    "check-cs": "ecs check --ansi",
+    "fix-cs": "ecs check --ansi --fix",
+    "phpstan": "phpstan --memory-limit=1G"
+  },
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.2"
+    },
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
+  }
+}
