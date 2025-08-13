@@ -36,3 +36,15 @@
     required: true,
     errors: settings.getErrors('allowedEnvironments')
 }) }}
+
+{{ forms.numberField({
+    label: 'Batch Size'|t('cleaver'),
+    instructions: 'The number of entries to process in each batch. Larger batches process faster but use more memory. Can be overridden with --batch-size flag.'|t('cleaver'),
+    id: 'batchSize',
+    name: 'batchSize',
+    value: settings.batchSize,
+    min: 1,
+    max: 1000,
+    required: true,
+    errors: settings.getErrors('batchSize')
+}) }}

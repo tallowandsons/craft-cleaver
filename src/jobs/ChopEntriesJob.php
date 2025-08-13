@@ -7,6 +7,7 @@ use craft\base\Batchable;
 use craft\elements\Entry;
 use craft\helpers\Queue as QueueHelper;
 use craft\queue\BaseBatchedElementJob;
+use tallowandsons\cleaver\Cleaver;
 use yii\queue\RetryableJobInterface;
 
 /**
@@ -59,6 +60,17 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         return new EntryIdsBatcher($this->entryIds);
     }
 
+    /**
+     * Initialize the job configuration
+     */
+    public function init(): void
+    {
+        // Always use batch size from settings
+        $settings = Cleaver::getInstance()->getSettings();
+        $this->batchSize = $settings->batchSize;
+
+        parent::init();
+    }
     protected function processItem(mixed $item): void
     {
         $entryId = $item;

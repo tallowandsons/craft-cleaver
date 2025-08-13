@@ -25,6 +25,11 @@ class Settings extends Model
      */
     public array $allowedEnvironments = ['dev', 'staging', 'local'];
 
+    /**
+     * The batch size for processing entries in queue jobs
+     */
+    public int $batchSize = 50;
+
     public function defineRules(): array
     {
         return [
@@ -34,6 +39,8 @@ class Settings extends Model
             ['minimumEntries', 'default', 'value' => 1],
             ['allowedEnvironments', 'each', 'rule' => ['string']],
             ['allowedEnvironments', 'default', 'value' => ['dev', 'staging', 'local']],
+            ['batchSize', 'integer', 'min' => 1, 'max' => 1000],
+            ['batchSize', 'default', 'value' => 50],
         ];
     }
 
