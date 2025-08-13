@@ -25,3 +25,14 @@
     required: true,
     errors: settings.getErrors('minimumEntries')
 }) }}
+
+{{ forms.textField({
+    label: 'Allowed Environments'|t('cleaver'),
+    instructions: 'Comma-separated list of environments where Cleaver is allowed to run. Cleaver will be completely blocked in other environments.'|t('cleaver'),
+    id: 'allowedEnvironments',
+    name: 'allowedEnvironments',
+    value: settings.allowedEnvironments|join(','),
+    placeholder: 'dev,staging,local',
+    required: true,
+    errors: settings.getErrors('allowedEnvironments')
+}) }}

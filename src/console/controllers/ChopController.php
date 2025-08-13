@@ -66,11 +66,19 @@ class ChopController extends Controller
      * The command respects a minimum entries constraint to prevent complete deletion
      * of all entries from a section. This can be configured in plugin settings or
      * overridden using the --min-entries option.
+     *
+     * The command is protected by an environment lock and will only run in
+     * specifically allowed environments configured in plugin settings.
      */
     public function actionIndex(): int
     {
         $plugin = Cleaver::getInstance();
         $settings = $plugin->getSettings();
+
+        // Check environment lock
+        if (!$this->checkEnvironmentLock($settings)) {
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
 
         // Use provided percent or default from settings
         $deletePercent = $this->percent ?? $settings->defaultPercent;
@@ -177,5 +185,38 @@ class ChopController extends Controller
         $this->stdout("\n");
 
         return $this->confirm("Do you want to proceed?");
+    }
+
+    /**
+     * Check if the current environment is allowed for Cleaver execution
+     */
+    private function checkEnvironmentLock($settings): bool
+    {
+        $currentEnv = Craft::$app->getConfig()->env ?: 'unknown';
+        $allowedEnvironments = $settings->getAllowedEnvironmentsArray();
+
+        // Add extra protection for production-like environments
+        $productionLikeEnvs = ['production', 'prod', 'live'];
+
+        // If current environment is not in allowed list
+        if (!in_array($currentEnv, $allowedEnvironments, true)) {
+            $this->stderr("\n" . str_repeat("!", 60) . "\n", Console::FG_RED);
+            $this->stderr("ENVIRONMENT LOCK: Cleaver is not allowed to run in this environment!\n", Console::FG_RED);
+            $this->stderr("Current environment: '{$currentEnv}'\n", Console::FG_RED);
+            $this->stderr("Allowed environments: " . implode(', ', $allowedEnvironments) . "\n", Console::FG_RED);
+
+            // Extra warning for production-like environments
+            if (in_array($currentEnv, $productionLikeEnvs, true)) {
+                $this->stderr("\nDANGER: This appears to be a PRODUCTION environment!\n", Console::FG_RED);
+                $this->stderr("Running Cleaver in production could cause irreversible data loss!\n", Console::FG_RED);
+            }
+
+            $this->stderr(str_repeat("!", 60) . "\n\n", Console::FG_RED);
+            $this->stderr("Configure allowed environments in plugin settings to enable Cleaver.\n", Console::FG_CYAN);
+
+            return false;
+        }
+
+        return true;
     }
 }
