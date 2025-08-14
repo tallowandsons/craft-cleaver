@@ -5,8 +5,12 @@ namespace tallowandsons\cleaver;
 use Craft;
 use craft\base\Model;
 use craft\base\Plugin;
+use craft\events\RegisterComponentTypesEvent;
+use craft\services\Utilities;
 use tallowandsons\cleaver\models\Settings;
 use tallowandsons\cleaver\services\ChopService;
+use tallowandsons\cleaver\utilities\CleaverUtility;
+use yii\base\Event;
 
 /**
  * cleaver plugin
@@ -60,5 +64,8 @@ class Cleaver extends Plugin
     {
         // Register event handlers here ...
         // (see https://craftcms.com/docs/5.x/extend/events.html to get started)
+        Event::on(Utilities::class, Utilities::EVENT_REGISTER_UTILITIES, function (RegisterComponentTypesEvent $event) {
+            $event->types[] = CleaverUtility::class;
+        });
     }
 }
