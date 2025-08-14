@@ -4,6 +4,8 @@ namespace tallowandsons\cleaver\utilities;
 
 use Craft;
 use craft\base\Utility;
+use craft\helpers\App;
+use tallowandsons\cleaver\Cleaver;
 
 /**
  * Cleaver Utility utility
@@ -12,7 +14,7 @@ class CleaverUtility extends Utility
 {
     public static function displayName(): string
     {
-        return Craft::t('cleaver', 'Cleaver Utility');
+        return Craft::t('cleaver', 'Cleaver');
     }
 
     static function id(): string
@@ -22,12 +24,47 @@ class CleaverUtility extends Utility
 
     public static function icon(): ?string
     {
-        return 'wrench';
+        return 'cut';
     }
 
     static function contentHtml(): string
     {
-        // todo: replace with custom content HTML
-        return '';
+        $plugin = Cleaver::getInstance();
+        $settings = $plugin->getSettings();
+
+        // Get all sections for the dropdown
+        $sections = [];
+        foreach (Craft::$app->entries->getAllSections() as $section) {
+            $sections[] = [
+                'label' => $section->name,
+                'value' => $section->handle,
+            ];
+        }
+
+        // Entry status options
+        $statusOptions = [
+            ['label' => 'Live', 'value' => 'live'],
+            ['label' => 'Disabled', 'value' => 'disabled'],
+            ['label' => 'Draft', 'value' => 'draft'],
+            ['label' => 'Pending', 'value' => 'pending'],
+        ];
+
+        // Current environment
+        $environment = self::getCurrentEnvironment();
+
+        return Craft::$app->view->renderTemplate('cleaver/_utility.twig', [
+            'sections' => $sections,
+            'statusOptions' => $statusOptions,
+            'settings' => $settings,
+            'environment' => $environment,
+        ]);
+    }
+
+    /**
+     * Get current environment name
+     */
+    private static function getCurrentEnvironment(): string
+    {
+        return App::env('CRAFT_ENVIRONMENT') ?: 'production';
     }
 }

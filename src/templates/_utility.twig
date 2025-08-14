@@ -1,0 +1,392 @@
+{% import "_includes/forms" as forms %}
+
+{% set currentEnvironment = environment|upper %}
+
+<div id="cleaver-utility">
+    {% if not sections is empty %}
+        <form id="cleaver-form">
+            {{ csrfInput() }}
+
+            <div class="field">
+                {{ forms.checkboxSelectField({
+                    label: 'Sections'|t('cleaver'),
+                    instructions: 'Select which sections to chop entries from'|t('cleaver'),
+                    name: 'sections',
+                    options: sections,
+                    required: true,
+                    class: 'fullwidth'
+                }) }}
+            </div>
+
+            <div class="field">
+                {{ forms.textField({
+                    label: 'Percent to Remove'|t('cleaver'),
+                    instructions: 'Percentage of entries to delete (1-99)'|t('cleaver'),
+                    name: 'percent',
+                    value: settings.defaultPercent,
+                    type: 'number',
+                    min: 1,
+                    max: 99,
+                    required: true,
+                    size: 10
+                }) }}
+
+                <div class="percent-slider" style="margin-top: 10px;">
+                    <input type="range" min="1" max="99" value="{{ settings.defaultPercent }}" class="slider" id="percentSlider">
+                    <div class="slider-value" style="text-align: center; margin-top: 5px;">
+                        <span id="sliderValue">{{ settings.defaultPercent }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                {{ forms.checkboxSelectField({
+                    label: 'Entry Statuses'|t('cleaver'),
+                    instructions: 'Select which entry statuses to include'|t('cleaver'),
+                    name: 'statuses',
+                    options: statusOptions,
+                    values: ['live'],
+                    class: 'fullwidth'
+                }) }}
+            </div>
+
+            <div class="field">
+                {{ forms.textField({
+                    label: 'Batch Size'|t('cleaver'),
+                    instructions: 'Number of entries to process per batch'|t('cleaver'),
+                    name: 'batchSize',
+                    value: settings.batchSize,
+                    type: 'number',
+                    min: 1,
+                    max: 1000,
+                    size: 10
+                }) }}
+            </div>
+
+            <hr>
+
+            <div class="field">
+                {{ forms.lightswitchField({
+                    label: 'Dry Run'|t('cleaver'),
+                    instructions: 'Simulate the operation without actually deleting entries'|t('cleaver'),
+                    name: 'dryRun',
+                    on: false
+                }) }}
+            </div>
+
+            <div class="field">
+                {{ forms.lightswitchField({
+                    label: 'Soft Delete'|t('cleaver'),
+                    instructions: 'Use soft delete instead of permanent deletion'|t('cleaver'),
+                    name: 'softDelete',
+                    on: settings.deleteMode == 'soft'
+                }) }}
+            </div>
+
+            <div class="field">
+                {{ forms.lightswitchField({
+                    label: 'Verbose Output'|t('cleaver'),
+                    instructions: 'Enable detailed logging output'|t('cleaver'),
+                    name: 'verbose',
+                    on: false
+                }) }}
+            </div>
+
+            <div class="field" style="margin-top: 30px;">
+                <button type="button" id="run-chop-btn" class="btn submit disabled" disabled>
+                    {{ 'Run Chop'|t('cleaver') }}
+                </button>
+            </div>
+        </form>
+
+        {# Confirmation Modal #}
+        <div id="chop-modal" class="modal hidden">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2>{{ 'Confirm Chop Operation'|t('cleaver') }}</h2>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-notice" style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <strong>⚠️ Warning: You are about to delete entries in {{ currentEnvironment }}</strong>
+                    </div>
+
+                    <div id="chop-summary" style="background: #f9fafb; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <!-- Summary will be populated via JavaScript -->
+                    </div>
+
+                    <div class="field">
+                        {{ forms.textField({
+                            label: 'Type the environment name to confirm'|t('cleaver'),
+                            instructions: 'Type "' ~ currentEnvironment ~ '" to confirm this operation'|t('cleaver'),
+                            id: 'confirm-environment',
+                            name: 'confirmEnvironment',
+                            placeholder: currentEnvironment,
+                            required: true
+                        }) }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="cancel-chop" class="btn">
+                        {{ 'Cancel'|t('cleaver') }}
+                    </button>
+                    <button type="submit" id="confirm-chop" class="btn submit disabled" disabled>
+                        {{ 'Confirm Chop'|t('cleaver') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {# Loading Overlay #}
+        <div id="loading-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 30px; border-radius: 4px; text-align: center;">
+                <div class="spinner" style="margin-bottom: 15px;"></div>
+                <div>{{ 'Processing chop operation...'|t('cleaver') }}</div>
+            </div>
+        </div>
+
+    {% else %}
+        <div class="zilch">
+            <p>{{ 'No sections found.'|t('cleaver') }}</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-container {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    padding: 20px 20px 0 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 0 20px 20px 20px;
+    text-align: right;
+}
+
+.modal-footer .btn {
+    margin-left: 10px;
+}
+
+.slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e2e8f0;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #0f62fe;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #0f62fe;
+    cursor: pointer;
+    border: none;
+}
+</style>
+
+<script>
+(function() {
+    const form = document.getElementById('cleaver-form');
+    const runBtn = document.getElementById('run-chop-btn');
+    const modal = document.getElementById('chop-modal');
+    const confirmBtn = document.getElementById('confirm-chop');
+    const cancelBtn = document.getElementById('cancel-chop');
+    const confirmInput = document.getElementById('confirm-environment');
+    const summary = document.getElementById('chop-summary');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const percentInput = document.querySelector('input[name="percent"]');
+    const percentSlider = document.getElementById('percentSlider');
+    const sliderValue = document.getElementById('sliderValue');
+    const currentEnvironment = '{{ currentEnvironment }}';
+
+    // Section checkboxes validation
+    function updateRunButton() {
+        const checkedSections = form.querySelectorAll('input[name="sections[]"]:checked');
+        if (checkedSections.length > 0) {
+            runBtn.classList.remove('disabled');
+            runBtn.removeAttribute('disabled');
+        } else {
+            runBtn.classList.add('disabled');
+            runBtn.setAttribute('disabled', '');
+        }
+    }
+
+    // Listen for section checkbox changes
+    form.addEventListener('change', function(e) {
+        if (e.target.name === 'sections[]') {
+            updateRunButton();
+        }
+    });
+
+    // Percent slider sync
+    percentSlider.addEventListener('input', function() {
+        percentInput.value = this.value;
+        sliderValue.textContent = this.value + '%';
+    });
+
+    percentInput.addEventListener('input', function() {
+        percentSlider.value = this.value;
+        sliderValue.textContent = this.value + '%';
+    });
+
+    // Run button click
+    runBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        if (this.classList.contains('disabled')) {
+            return;
+        }
+
+        // Build summary
+        const formData = new FormData(form);
+        const sections = formData.getAll('sections[]');
+        const percent = formData.get('percent');
+        const statuses = formData.getAll('statuses[]');
+        const dryRun = formData.get('dryRun') === '1';
+
+        let summaryHtml = '<ul>';
+        summaryHtml += '<li><strong>Sections:</strong> ' + sections.join(', ') + '</li>';
+        summaryHtml += '<li><strong>Percent to delete:</strong> ' + percent + '%</li>';
+        summaryHtml += '<li><strong>Statuses:</strong> ' + (statuses.length ? statuses.join(', ') : 'All') + '</li>';
+        summaryHtml += '<li><strong>Mode:</strong> ' + (dryRun ? 'DRY RUN (simulation)' : 'LIVE DELETION') + '</li>';
+        summaryHtml += '</ul>';
+
+        summary.innerHTML = summaryHtml;
+
+        // Show modal
+        modal.classList.remove('hidden');
+        confirmInput.focus();
+    });
+
+    // Environment confirmation validation
+    confirmInput.addEventListener('input', function() {
+        if (this.value === currentEnvironment) {
+            confirmBtn.classList.remove('disabled');
+            confirmBtn.removeAttribute('disabled');
+        } else {
+            confirmBtn.classList.add('disabled');
+            confirmBtn.setAttribute('disabled', '');
+        }
+    });
+
+    // Cancel button
+    cancelBtn.addEventListener('click', function() {
+        modal.classList.add('hidden');
+        confirmInput.value = '';
+        confirmBtn.classList.add('disabled');
+        confirmBtn.setAttribute('disabled', '');
+    });
+
+    // Confirm chop
+    confirmBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        if (this.classList.contains('disabled')) {
+            return;
+        }
+
+        // Hide modal and show loading
+        modal.classList.add('hidden');
+        loadingOverlay.classList.remove('hidden');
+
+        // Prepare form data
+        const formData = new FormData(form);
+        formData.append('confirmEnvironment', confirmInput.value);
+
+        // Submit via AJAX
+        fetch('{{ actionUrl('cleaver/utility/chop') }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingOverlay.classList.add('hidden');
+
+            if (data.success) {
+                Craft.cp.displayNotice(data.message || 'Chop operation completed successfully');
+            } else {
+                Craft.cp.displayError(data.message || 'An error occurred during the chop operation');
+            }
+
+            // Reset form
+            confirmInput.value = '';
+            confirmBtn.classList.add('disabled');
+            confirmBtn.setAttribute('disabled', '');
+        })
+        .catch(error => {
+            loadingOverlay.classList.add('hidden');
+            Craft.cp.displayError('Network error occurred');
+            console.error('Error:', error);
+
+            // Reset form
+            confirmInput.value = '';
+            confirmBtn.classList.add('disabled');
+            confirmBtn.setAttribute('disabled', '');
+        });
+    });
+
+    // Close modal on ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            cancelBtn.click();
+        }
+    });
+
+    // Initial state
+    updateRunButton();
+})();
+</script>
