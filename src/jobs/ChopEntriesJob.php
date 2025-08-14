@@ -69,6 +69,9 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         $settings = Cleaver::getInstance()->getSettings();
         $this->batchSize = $settings->batchSize;
 
+        Cleaver::log("Starting ChopEntriesJob for section '{$this->sectionHandle}' (status: {$this->status}) - " . count($this->entryIds) . " entries to process", 'job');
+        Cleaver::debug("Job configuration - batchSize: {$this->batchSize}, deleteMode: {$settings->deleteMode}", 'job');
+
         parent::init();
     }
     protected function processItem(mixed $item): void
@@ -82,16 +85,24 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
 
         if (!$entry) {
             // Entry might have already been deleted
+            Cleaver::debug("Entry ID {$entryId} not found (may have been already deleted)", 'job');
             return;
         }
+
+        Cleaver::debug("Processing entry ID {$entryId}: '{$entry->title}' from section '{$this->sectionHandle}'", 'job');
 
         // Delete the entry
         $settings = Cleaver::getInstance()->getSettings();
         $hardDelete = ($settings->deleteMode === Settings::DELETE_MODE_HARD);
 
         if (!Craft::$app->getElements()->deleteElement($entry, $hardDelete)) {
+            $deleteType = $hardDelete ? 'hard' : 'soft';
+            Cleaver::log("Failed to {$deleteType} delete entry ID {$entryId}: '{$entry->title}'", 'job');
             throw new \Exception("Failed to delete entry ID: {$entryId}");
         }
+
+        $deleteType = $hardDelete ? 'hard' : 'soft';
+        Cleaver::debug("Successfully {$deleteType} deleted entry ID {$entryId}: '{$entry->title}'", 'job');
     }
 
     protected function defaultDescription(): ?string
@@ -100,10 +111,21 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         return "Chopping {$count} entries from section '{$this->sectionHandle}' (status: {$this->status})";
     }
 
+    public function afterExecute(): void
+    {
+        parent::afterExecute();
+        Cleaver::log("Completed ChopEntriesJob for section '{$this->sectionHandle}' (status: {$this->status}) - processed " . count($this->entryIds) . " entries", 'job');
+    }
+
     public function canRetry($attempt, $error): bool
     {
-        // Allow up to 3 retry attempts
-        return $attempt < 3;
+        $canRetry = $attempt < 3;
+        if ($canRetry) {
+            Cleaver::log("ChopEntriesJob retry attempt {$attempt} for section '{$this->sectionHandle}' due to error: " . $error->getMessage(), 'job');
+        } else {
+            Cleaver::log("ChopEntriesJob failed after 3 attempts for section '{$this->sectionHandle}': " . $error->getMessage(), 'job');
+        }
+        return $canRetry;
     }
 
     public function getTtr(): int

@@ -84,8 +84,12 @@ class ChopController extends Controller
 
         // Check environment lock
         if (!$this->checkEnvironmentLock($settings)) {
+            Cleaver::log("Environment lock check failed", 'cli');
             return ExitCode::UNSPECIFIED_ERROR;
         }
+
+        Cleaver::log("Starting chop operation via CLI", 'cli');
+        Cleaver::debug("CLI options - sections: {$this->sections}, statuses: {$this->statuses}, percent: {$this->percent}, minEntries: {$this->minEntries}", 'cli');
 
         // Use provided percent or default from settings
         $deletePercent = $this->percent ?? $settings->defaultPercent;
@@ -93,15 +97,22 @@ class ChopController extends Controller
         // Validate percentage
         if ($deletePercent < 1 || $deletePercent > 99) {
             $this->stderr("Error: Percentage must be between 1 and 99.\n", Console::FG_RED);
+            Cleaver::log("Invalid percentage provided: {$deletePercent}", 'cli');
             return ExitCode::UNSPECIFIED_ERROR;
         }
+
+        Cleaver::debug("Using delete percentage: {$deletePercent}%", 'cli');
 
         // Get target sections
         $targetSections = $this->getTargetSections();
         if (empty($targetSections)) {
             $this->stderr("Error: No valid sections found.\n", Console::FG_RED);
+            Cleaver::log("No valid sections found for CLI operation", 'cli');
             return ExitCode::UNSPECIFIED_ERROR;
         }
+
+        $sectionNames = array_map(fn($s) => $s->name, $targetSections);
+        Cleaver::log("Target sections: " . implode(', ', $sectionNames), 'cli');
 
         // Get target statuses
         $targetStatuses = $this->getTargetStatuses();
@@ -118,6 +129,7 @@ class ChopController extends Controller
         // Display summary and get confirmation
         if (!$this->confirmDeletion($targetSections, $deletePercent, $targetStatuses)) {
             $this->stdout("Operation cancelled.\n", Console::FG_YELLOW);
+            Cleaver::log("CLI operation cancelled by user", 'cli');
             return ExitCode::OK;
         }
 
@@ -125,9 +137,11 @@ class ChopController extends Controller
         try {
             $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries, $targetStatuses);
             $this->stdout("Chop operation has been queued successfully.\n", Console::FG_GREEN);
+            Cleaver::log("CLI chop operation queued successfully", 'cli');
             return ExitCode::OK;
         } catch (\Exception $e) {
             $this->stderr("Error: " . $e->getMessage() . "\n", Console::FG_RED);
+            Cleaver::log("CLI chop operation failed: " . $e->getMessage(), 'cli');
             return ExitCode::UNSPECIFIED_ERROR;
         }
     }
@@ -246,6 +260,8 @@ class ChopController extends Controller
         $currentEnv = Craft::$app->getConfig()->env ?: 'unknown';
         $allowedEnvironments = $settings->getAllowedEnvironmentsArray();
 
+        Cleaver::debug("Environment check - current: '{$currentEnv}', allowed: " . implode(', ', $allowedEnvironments), 'cli');
+
         // Add extra protection for production-like environments
         $productionLikeEnvs = ['production', 'prod', 'live'];
 
@@ -260,6 +276,7 @@ class ChopController extends Controller
             if (in_array($currentEnv, $productionLikeEnvs, true)) {
                 $this->stderr("\nDANGER: This appears to be a PRODUCTION environment!\n", Console::FG_RED);
                 $this->stderr("Running Cleaver in production could cause irreversible data loss!\n", Console::FG_RED);
+                Cleaver::log("CRITICAL: Attempt to run Cleaver in production-like environment '{$currentEnv}'", 'cli');
             }
 
             $this->stderr(str_repeat("!", 60) . "\n\n", Console::FG_RED);
@@ -268,6 +285,7 @@ class ChopController extends Controller
             return false;
         }
 
+        Cleaver::debug("Environment check passed for '{$currentEnv}'", 'cli');
         return true;
     }
 }

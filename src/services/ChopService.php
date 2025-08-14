@@ -19,9 +19,15 @@ class ChopService extends Component
      */
     public function chopEntries(array $sections, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null): void
     {
+        $sectionNames = array_map(fn($s) => $s->name, $sections);
+        Cleaver::log("Starting chop operation for " . count($sections) . " sections: " . implode(', ', $sectionNames), 'service');
+        Cleaver::debug("Chop parameters - percent: {$percent}%, minimumEntries: " . ($minimumEntries ?? 'default') . ", targetStatuses: " . ($targetStatuses ? implode(', ', $targetStatuses) : 'all'), 'service');
+
         foreach ($sections as $section) {
             $this->chopEntriesFromSection($section, $percent, $minimumEntries, $targetStatuses);
         }
+
+        Cleaver::log("Completed chop operation for all sections", 'service');
     }
 
     /**
@@ -29,20 +35,33 @@ class ChopService extends Component
      */
     private function chopEntriesFromSection(Section $section, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null): void
     {
+        Cleaver::debug("Processing section: {$section->name} (handle: {$section->handle})", 'service');
+
         // Get all unique statuses in this section
         $statuses = $this->getUniqueStatusesInSection($section);
+        Cleaver::debug("Found statuses in section {$section->handle}: " . implode(', ', $statuses), 'service');
 
         // Filter statuses if target statuses are specified
         if ($targetStatuses !== null) {
             $statuses = array_intersect($statuses, $targetStatuses);
+            Cleaver::debug("Filtered to target statuses: " . implode(', ', $statuses), 'service');
         }
 
+        $totalJobsQueued = 0;
         foreach ($statuses as $status) {
             $entriesToDelete = $this->selectEntriesToDelete($section, $status, $percent, $minimumEntries);
 
             if (!empty($entriesToDelete)) {
                 $this->queueDeletionJob($entriesToDelete, $section->handle, $status);
+                $totalJobsQueued++;
+                Cleaver::debug("Queued deletion job for {$section->handle} (status: {$status}) - " . count($entriesToDelete) . " entries", 'service');
+            } else {
+                Cleaver::debug("No entries to delete for {$section->handle} (status: {$status})", 'service');
             }
+        }
+
+        if ($totalJobsQueued > 0) {
+            Cleaver::log("Queued {$totalJobsQueued} deletion jobs for section: {$section->name}", 'service');
         }
     }
 
@@ -75,6 +94,7 @@ class ChopService extends Component
             ->count();
 
         if ($totalEntries === 0) {
+            Cleaver::debug("No entries found for {$section->handle} with status: {$status}", 'service');
             return [];
         }
 
@@ -90,6 +110,8 @@ class ChopService extends Component
         // Ensure we don't delete more than we should to maintain minimum
         $maxDeletions = max(0, $totalEntries - $minimumEntries);
         $entriesToDeleteCount = min($entriesToDeleteCount, $maxDeletions);
+
+        Cleaver::debug("Section {$section->handle} (status: {$status}) - Total: {$totalEntries}, Will delete: {$entriesToDeleteCount}, Min entries: {$minimumEntries}", 'service');
 
         if ($entriesToDeleteCount === 0) {
             return [];
@@ -120,5 +142,6 @@ class ChopService extends Component
         ]);
 
         Craft::$app->getQueue()->push($job);
+        Cleaver::debug("Queued ChopEntriesJob with " . count($entryIds) . " entry IDs for section: {$sectionHandle} (status: {$status})", 'service');
     }
 }

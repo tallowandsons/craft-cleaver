@@ -17,6 +17,13 @@ class Settings extends Model
     public const DELETE_MODE_HARD = 'hard';
 
     /**
+     * Log level constants
+     */
+    public const LOG_LEVEL_NONE = 'none';
+    public const LOG_LEVEL_INFO = 'info';
+    public const LOG_LEVEL_VERBOSE = 'verbose';
+
+    /**
      * The default percentage of entries to delete when no percentage is specified
      */
     public int $defaultPercent = 90;
@@ -41,6 +48,11 @@ class Settings extends Model
      */
     public string $deleteMode = self::DELETE_MODE_SOFT;
 
+    /**
+     * The log level for Cleaver logging (none, info, or verbose)
+     */
+    public string $logLevel = self::LOG_LEVEL_INFO;
+
     public function defineRules(): array
     {
         return [
@@ -54,6 +66,8 @@ class Settings extends Model
             ['batchSize', 'default', 'value' => 50],
             ['deleteMode', 'in', 'range' => [self::DELETE_MODE_SOFT, self::DELETE_MODE_HARD]],
             ['deleteMode', 'default', 'value' => self::DELETE_MODE_SOFT],
+            ['logLevel', 'in', 'range' => [self::LOG_LEVEL_NONE, self::LOG_LEVEL_INFO, self::LOG_LEVEL_VERBOSE]],
+            ['logLevel', 'default', 'value' => self::LOG_LEVEL_INFO],
         ];
     }
 
