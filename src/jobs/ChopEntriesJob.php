@@ -51,6 +51,11 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
     public string $status = '';
 
     /**
+     * Whether this is a dry run (no actual deletion)
+     */
+    public bool $dryRun = false;
+
+    /**
      * The batch size for processing entries
      */
     public int $batchSize = 50;
@@ -69,8 +74,9 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         $settings = Cleaver::getInstance()->getSettings();
         $this->batchSize = $settings->batchSize;
 
-        Cleaver::log("Starting ChopEntriesJob for section '{$this->sectionHandle}' (status: {$this->status}) - " . count($this->entryIds) . " entries to process", 'job');
-        Cleaver::debug("Job configuration - batchSize: {$this->batchSize}, deleteMode: {$settings->deleteMode}", 'job');
+        $mode = $this->dryRun ? 'DRY RUN' : 'LIVE';
+        Cleaver::log("Starting ChopEntriesJob ({$mode}) for section '{$this->sectionHandle}' (status: {$this->status}) - " . count($this->entryIds) . " entries to process", 'job');
+        Cleaver::debug("Job configuration - batchSize: {$this->batchSize}, deleteMode: {$settings->deleteMode}, dryRun: " . ($this->dryRun ? 'true' : 'false'), 'job');
 
         parent::init();
     }
@@ -86,6 +92,13 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         if (!$entry) {
             // Entry might have already been deleted
             Cleaver::debug("Entry ID {$entryId} not found (may have been already deleted)", 'job');
+            return;
+        }
+
+        if ($this->dryRun) {
+            // In dry run mode, just log what would be deleted
+            Cleaver::log("DRY RUN: Would delete entry ID {$entryId}: '{$entry->title}' from section '{$this->sectionHandle}'", 'job');
+            Cleaver::debug("DRY RUN: Entry details - ID: {$entryId}, Title: '{$entry->title}', Status: {$entry->status}, Section: {$this->sectionHandle}", 'job');
             return;
         }
 
@@ -108,13 +121,15 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
     protected function defaultDescription(): ?string
     {
         $count = count($this->entryIds);
-        return "Chopping {$count} entries from section '{$this->sectionHandle}' (status: {$this->status})";
+        $mode = $this->dryRun ? ' (DRY RUN)' : '';
+        return "Chopping {$count} entries from section '{$this->sectionHandle}' (status: {$this->status}){$mode}";
     }
 
     public function afterExecute(): void
     {
         parent::afterExecute();
-        Cleaver::log("Completed ChopEntriesJob for section '{$this->sectionHandle}' (status: {$this->status}) - processed " . count($this->entryIds) . " entries", 'job');
+        $mode = $this->dryRun ? 'DRY RUN' : 'LIVE';
+        Cleaver::log("Completed ChopEntriesJob ({$mode}) for section '{$this->sectionHandle}' (status: {$this->status}) - processed " . count($this->entryIds) . " entries", 'job');
     }
 
     public function canRetry($attempt, $error): bool

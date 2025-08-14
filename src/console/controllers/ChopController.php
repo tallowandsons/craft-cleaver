@@ -41,6 +41,11 @@ class ChopController extends Controller
      */
     public bool $skipConfirm = false;
 
+    /**
+     * Dry run mode - log what would be deleted without actually deleting
+     */
+    public bool $dryRun = false;
+
     public function options($actionID): array
     {
         $options = parent::options($actionID);
@@ -51,6 +56,7 @@ class ChopController extends Controller
                 $options[] = 'percent';
                 $options[] = 'minEntries';
                 $options[] = 'skipConfirm';
+                $options[] = 'dryRun';
                 break;
         }
         return $options;
@@ -64,6 +70,7 @@ class ChopController extends Controller
             'p' => 'percent',
             'm' => 'minEntries',
             'y' => 'skipConfirm',
+            'd' => 'dryRun',
         ];
     }
 
@@ -89,7 +96,12 @@ class ChopController extends Controller
         }
 
         Cleaver::log("Starting chop operation via CLI", 'cli');
-        Cleaver::debug("CLI options - sections: {$this->sections}, statuses: {$this->statuses}, percent: {$this->percent}, minEntries: {$this->minEntries}", 'cli');
+        Cleaver::debug("CLI options - sections: {$this->sections}, statuses: {$this->statuses}, percent: {$this->percent}, minEntries: {$this->minEntries}, dryRun: " . ($this->dryRun ? 'true' : 'false'), 'cli');
+
+        if ($this->dryRun) {
+            $this->stdout("DRY RUN MODE: No entries will actually be deleted.\n", Console::FG_CYAN);
+            Cleaver::log("Operating in DRY RUN mode", 'cli');
+        }
 
         // Use provided percent or default from settings
         $deletePercent = $this->percent ?? $settings->defaultPercent;
@@ -135,9 +147,10 @@ class ChopController extends Controller
 
         // Execute the chop operation
         try {
-            $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries, $targetStatuses);
-            $this->stdout("Chop operation has been queued successfully.\n", Console::FG_GREEN);
-            Cleaver::log("CLI chop operation queued successfully", 'cli');
+            $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries, $targetStatuses, $this->dryRun);
+            $operationType = $this->dryRun ? 'dry-run' : 'chop';
+            $this->stdout("Chop operation has been queued successfully" . ($this->dryRun ? ' (DRY RUN)' : '') . ".\n", Console::FG_GREEN);
+            Cleaver::log("CLI {$operationType} operation queued successfully", 'cli');
             return ExitCode::OK;
         } catch (\Exception $e) {
             $this->stderr("Error: " . $e->getMessage() . "\n", Console::FG_RED);

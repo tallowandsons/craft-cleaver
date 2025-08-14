@@ -17,25 +17,26 @@ class ChopService extends Component
     /**
      * Chop entries from the specified sections
      */
-    public function chopEntries(array $sections, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null): void
+    public function chopEntries(array $sections, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null, bool $dryRun = false): void
     {
         $sectionNames = array_map(fn($s) => $s->name, $sections);
-        Cleaver::log("Starting chop operation for " . count($sections) . " sections: " . implode(', ', $sectionNames), 'service');
-        Cleaver::debug("Chop parameters - percent: {$percent}%, minimumEntries: " . ($minimumEntries ?? 'default') . ", targetStatuses: " . ($targetStatuses ? implode(', ', $targetStatuses) : 'all'), 'service');
+        $mode = $dryRun ? 'DRY RUN' : 'LIVE';
+        Cleaver::log("Starting chop operation ({$mode}) for " . count($sections) . " sections: " . implode(', ', $sectionNames), 'service');
+        Cleaver::debug("Chop parameters - percent: {$percent}%, minimumEntries: " . ($minimumEntries ?? 'default') . ", targetStatuses: " . ($targetStatuses ? implode(', ', $targetStatuses) : 'all') . ", dryRun: " . ($dryRun ? 'true' : 'false'), 'service');
 
         foreach ($sections as $section) {
-            $this->chopEntriesFromSection($section, $percent, $minimumEntries, $targetStatuses);
+            $this->chopEntriesFromSection($section, $percent, $minimumEntries, $targetStatuses, $dryRun);
         }
 
-        Cleaver::log("Completed chop operation for all sections", 'service');
+        Cleaver::log("Completed chop operation ({$mode}) for all sections", 'service');
     }
 
     /**
      * Chop entries from a specific section while preserving status distribution
      */
-    private function chopEntriesFromSection(Section $section, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null): void
+    private function chopEntriesFromSection(Section $section, int $percent, ?int $minimumEntries = null, ?array $targetStatuses = null, bool $dryRun = false): void
     {
-        Cleaver::debug("Processing section: {$section->name} (handle: {$section->handle})", 'service');
+        Cleaver::debug("Processing section: {$section->name} (handle: {$section->handle})" . ($dryRun ? ' - DRY RUN' : ''), 'service');
 
         // Get all unique statuses in this section
         $statuses = $this->getUniqueStatusesInSection($section);
@@ -52,16 +53,18 @@ class ChopService extends Component
             $entriesToDelete = $this->selectEntriesToDelete($section, $status, $percent, $minimumEntries);
 
             if (!empty($entriesToDelete)) {
-                $this->queueDeletionJob($entriesToDelete, $section->handle, $status);
+                $this->queueDeletionJob($entriesToDelete, $section->handle, $status, $dryRun);
                 $totalJobsQueued++;
-                Cleaver::debug("Queued deletion job for {$section->handle} (status: {$status}) - " . count($entriesToDelete) . " entries", 'service');
+                $mode = $dryRun ? 'DRY RUN' : 'deletion';
+                Cleaver::debug("Queued {$mode} job for {$section->handle} (status: {$status}) - " . count($entriesToDelete) . " entries", 'service');
             } else {
                 Cleaver::debug("No entries to delete for {$section->handle} (status: {$status})", 'service');
             }
         }
 
         if ($totalJobsQueued > 0) {
-            Cleaver::log("Queued {$totalJobsQueued} deletion jobs for section: {$section->name}", 'service');
+            $mode = $dryRun ? 'DRY RUN' : 'deletion';
+            Cleaver::log("Queued {$totalJobsQueued} {$mode} jobs for section: {$section->name}", 'service');
         }
     }
 
@@ -133,15 +136,17 @@ class ChopService extends Component
     /**
      * Queue a deletion job for the selected entries
      */
-    private function queueDeletionJob(array $entryIds, string $sectionHandle, string $status): void
+    private function queueDeletionJob(array $entryIds, string $sectionHandle, string $status, bool $dryRun = false): void
     {
         $job = new ChopEntriesJob([
             'entryIds' => $entryIds,
             'sectionHandle' => $sectionHandle,
             'status' => $status,
+            'dryRun' => $dryRun,
         ]);
 
         Craft::$app->getQueue()->push($job);
-        Cleaver::debug("Queued ChopEntriesJob with " . count($entryIds) . " entry IDs for section: {$sectionHandle} (status: {$status})", 'service');
+        $mode = $dryRun ? 'DRY RUN' : 'deletion';
+        Cleaver::debug("Queued ChopEntriesJob ({$mode}) with " . count($entryIds) . " entry IDs for section: {$sectionHandle} (status: {$status})", 'service');
     }
 }
