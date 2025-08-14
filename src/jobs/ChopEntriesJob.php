@@ -7,7 +7,7 @@ use craft\base\Batchable;
 use craft\elements\Entry;
 use craft\queue\BaseBatchedElementJob;
 use tallowandsons\cleaver\Cleaver;
-use tallowandsons\cleaver\models\Settings;
+use tallowandsons\cleaver\models\ChopConfig;
 use yii\queue\RetryableJobInterface;
 
 /**
@@ -51,9 +51,9 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
     public string $status = '';
 
     /**
-     * Whether this is a dry run (no actual deletion)
+     * ChopConfig array for job serialization
      */
-    public bool $dryRun = false;
+    public array $config = [];
 
     /**
      * The batch size for processing entries
@@ -70,19 +70,30 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
      */
     public function init(): void
     {
-        // Always use batch size from settings
+        // Get batch size from plugin settings (not user configurable)
         $settings = Cleaver::getInstance()->getSettings();
         $this->batchSize = $settings->batchSize;
 
-        $mode = $this->dryRun ? 'DRY RUN' : 'LIVE';
+        $config = $this->getChopConfig();
+        $mode = $config->dryRun ? 'DRY RUN' : 'LIVE';
         Cleaver::log("Starting ChopEntriesJob ({$mode}) for section '{$this->sectionHandle}' (status: {$this->status}) - " . count($this->entryIds) . " entries to process", 'job');
-        Cleaver::debug("Job configuration - batchSize: {$this->batchSize}, deleteMode: {$settings->deleteMode}, dryRun: " . ($this->dryRun ? 'true' : 'false'), 'job');
+        Cleaver::debug("Job configuration: " . $config->getSummary() . ", batchSize: {$this->batchSize}", 'job');
 
         parent::init();
     }
+
+    /**
+     * Get the ChopConfig from the serialized array
+     */
+    private function getChopConfig(): ChopConfig
+    {
+        return ChopConfig::fromArray($this->config);
+    }
+
     protected function processItem(mixed $item): void
     {
         $entryId = $item;
+        $config = $this->getChopConfig();
 
         // Get the entry
         $entry = Entry::find()
@@ -95,7 +106,7 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
             return;
         }
 
-        if ($this->dryRun) {
+        if ($config->dryRun) {
             // In dry run mode, just log what would be deleted
             Cleaver::log("DRY RUN: Would delete entry ID {$entryId}: '{$entry->title}' from section '{$this->sectionHandle}'", 'job');
             Cleaver::debug("DRY RUN: Entry details - ID: {$entryId}, Title: '{$entry->title}', Status: {$entry->status}, Section: {$this->sectionHandle}", 'job');
@@ -105,8 +116,7 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
         Cleaver::debug("Processing entry ID {$entryId}: '{$entry->title}' from section '{$this->sectionHandle}'", 'job');
 
         // Delete the entry
-        $settings = Cleaver::getInstance()->getSettings();
-        $hardDelete = ($settings->deleteMode === Settings::DELETE_MODE_HARD);
+        $hardDelete = !$config->softDelete;
 
         if (!Craft::$app->getElements()->deleteElement($entry, $hardDelete)) {
             $deleteType = $hardDelete ? 'hard' : 'soft';
@@ -120,15 +130,17 @@ class ChopEntriesJob extends BaseBatchedElementJob implements RetryableJobInterf
 
     protected function defaultDescription(): ?string
     {
+        $config = $this->getChopConfig();
         $count = count($this->entryIds);
-        $mode = $this->dryRun ? ' (DRY RUN)' : '';
+        $mode = $config->dryRun ? ' (DRY RUN)' : '';
         return "Chopping {$count} entries from section '{$this->sectionHandle}' (status: {$this->status}){$mode}";
     }
 
     public function afterExecute(): void
     {
         parent::afterExecute();
-        $mode = $this->dryRun ? 'DRY RUN' : 'LIVE';
+        $config = $this->getChopConfig();
+        $mode = $config->dryRun ? 'DRY RUN' : 'LIVE';
         Cleaver::log("Completed ChopEntriesJob ({$mode}) for section '{$this->sectionHandle}' (status: {$this->status}) - processed " . count($this->entryIds) . " entries", 'job');
     }
 

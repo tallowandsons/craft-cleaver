@@ -6,6 +6,7 @@ use Craft;
 use craft\console\Controller;
 use craft\elements\Entry;
 use tallowandsons\cleaver\Cleaver;
+use tallowandsons\cleaver\models\ChopConfig;
 use yii\console\ExitCode;
 use yii\helpers\Console;
 
@@ -46,6 +47,11 @@ class ChopController extends Controller
      */
     public bool $dryRun = false;
 
+    /**
+     * Verbose output - show detailed information
+     */
+    public bool $verbose = false;
+
     public function options($actionID): array
     {
         $options = parent::options($actionID);
@@ -57,6 +63,7 @@ class ChopController extends Controller
                 $options[] = 'minEntries';
                 $options[] = 'skipConfirm';
                 $options[] = 'dryRun';
+                $options[] = 'verbose';
                 break;
         }
         return $options;
@@ -71,6 +78,7 @@ class ChopController extends Controller
             'm' => 'minEntries',
             'y' => 'skipConfirm',
             'd' => 'dryRun',
+            'v' => 'verbose',
         ];
     }
 
@@ -95,51 +103,30 @@ class ChopController extends Controller
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
-        Cleaver::log("Starting chop operation via CLI", 'cli');
-        Cleaver::debug("CLI options - sections: {$this->sections}, statuses: {$this->statuses}, percent: {$this->percent}, minEntries: {$this->minEntries}, dryRun: " . ($this->dryRun ? 'true' : 'false'), 'cli');
+        // Create ChopConfig from defaults and CLI options
+        $config = ChopConfig::fromDefaults()->setSource('cli');
+        $this->populateConfigFromCliOptions($config);
 
-        if ($this->dryRun) {
+        Cleaver::log("Starting chop operation via CLI", 'cli');
+        Cleaver::debug("CLI configuration: " . $config->getSummary(), 'cli');
+
+        if ($config->dryRun) {
             $this->stdout("DRY RUN MODE: No entries will actually be deleted.\n", Console::FG_CYAN);
             Cleaver::log("Operating in DRY RUN mode", 'cli');
         }
 
-        // Use provided percent or default from settings
-        $deletePercent = $this->percent ?? $settings->defaultPercent;
-
-        // Validate percentage
-        if ($deletePercent < 1 || $deletePercent > 99) {
-            $this->stderr("Error: Percentage must be between 1 and 99.\n", Console::FG_RED);
-            Cleaver::log("Invalid percentage provided: {$deletePercent}", 'cli');
-            return ExitCode::UNSPECIFIED_ERROR;
-        }
-
-        Cleaver::debug("Using delete percentage: {$deletePercent}%", 'cli');
-
-        // Get target sections
-        $targetSections = $this->getTargetSections();
-        if (empty($targetSections)) {
-            $this->stderr("Error: No valid sections found.\n", Console::FG_RED);
-            Cleaver::log("No valid sections found for CLI operation", 'cli');
-            return ExitCode::UNSPECIFIED_ERROR;
-        }
-
-        $sectionNames = array_map(fn($s) => $s->name, $targetSections);
-        Cleaver::log("Target sections: " . implode(', ', $sectionNames), 'cli');
-
-        // Get target statuses
-        $targetStatuses = $this->getTargetStatuses();
-        if ($targetStatuses === []) {
-            return ExitCode::UNSPECIFIED_ERROR;
-        }
-
-        // Validate minimum entries if provided
-        if ($this->minEntries !== null && $this->minEntries < 0) {
-            $this->stderr("Error: Minimum entries must be 0 or greater.\n", Console::FG_RED);
+        // Validate configuration
+        if (!$config->validate()) {
+            foreach ($config->getErrors() as $attribute => $errors) {
+                foreach ($errors as $error) {
+                    $this->stderr("Error in {$attribute}: {$error}\n", Console::FG_RED);
+                }
+            }
             return ExitCode::UNSPECIFIED_ERROR;
         }
 
         // Display summary and get confirmation
-        if (!$this->confirmDeletion($targetSections, $deletePercent, $targetStatuses)) {
+        if (!$this->confirmDeletion($config)) {
             $this->stdout("Operation cancelled.\n", Console::FG_YELLOW);
             Cleaver::log("CLI operation cancelled by user", 'cli');
             return ExitCode::OK;
@@ -147,9 +134,9 @@ class ChopController extends Controller
 
         // Execute the chop operation
         try {
-            $plugin->chopService->chopEntries($targetSections, $deletePercent, $this->minEntries, $targetStatuses, $this->dryRun);
-            $operationType = $this->dryRun ? 'dry-run' : 'chop';
-            $this->stdout("Chop operation has been queued successfully" . ($this->dryRun ? ' (DRY RUN)' : '') . ".\n", Console::FG_GREEN);
+            $plugin->chopService->planChop($config);
+            $operationType = $config->dryRun ? 'dry-run' : 'chop';
+            $this->stdout("Chop operation has been queued successfully" . ($config->dryRun ? ' (DRY RUN)' : '') . ".\n", Console::FG_GREEN);
             Cleaver::log("CLI {$operationType} operation queued successfully", 'cli');
             return ExitCode::OK;
         } catch (\Exception $e) {
@@ -160,109 +147,113 @@ class ChopController extends Controller
     }
 
     /**
-     * Get the target sections based on the provided section handles
+     * Populate ChopConfig from CLI options
      */
-    private function getTargetSections(): array
+    private function populateConfigFromCliOptions(ChopConfig $config): void
     {
-        if ($this->sections) {
-            $sectionHandles = array_map('trim', explode(',', $this->sections));
-            $sections = [];
-
-            foreach ($sectionHandles as $handle) {
-                $section = Craft::$app->entries->getSectionByHandle($handle);
-                if ($section) {
-                    $sections[] = $section;
-                } else {
-                    $this->stderr("Warning: Section '{$handle}' not found.\n", Console::FG_YELLOW);
-                }
-            }
-
-            return $sections;
+        if ($this->sections !== null) {
+            $config->sectionHandles = array_map('trim', explode(',', $this->sections));
         }
 
-        // Return all sections if none specified
-        return Craft::$app->entries->getAllSections();
-    }
-
-    /**
-     * Get the target statuses based on the provided status names
-     */
-    private function getTargetStatuses(): ?array
-    {
-        if (!$this->statuses) {
-            return null; // Return null to indicate all statuses should be included
+        if ($this->percent !== null) {
+            $config->percent = $this->percent;
         }
 
-        $statusNames = array_map('trim', explode(',', $this->statuses));
-        $validStatuses = [];
-        $availableStatuses = ['live', 'pending', 'disabled', 'expired'];
-
-        foreach ($statusNames as $status) {
-            $status = strtolower($status);
-            if (in_array($status, $availableStatuses)) {
-                $validStatuses[] = $status;
-            } else {
-                $this->stderr("Warning: Status '{$status}' is not valid. Valid statuses are: " . implode(', ', $availableStatuses) . "\n", Console::FG_YELLOW);
-            }
+        if ($this->statuses !== null) {
+            $config->statuses = array_map('trim', explode(',', $this->statuses));
         }
 
-        if (empty($validStatuses)) {
-            $this->stderr("Error: No valid statuses provided.\n", Console::FG_RED);
-            return [];
+        if ($this->minEntries !== null) {
+            $config->minimumEntries = $this->minEntries;
         }
 
-        return $validStatuses;
+        $config->dryRun = $this->dryRun;
+        $config->verbose = $this->verbose;
     }
 
     /**
      * Display deletion summary and get user confirmation
      */
-    private function confirmDeletion(array $sections, int $percent, ?array $targetStatuses = null): bool
+    private function confirmDeletion(ChopConfig $config): bool
     {
         if ($this->skipConfirm) {
             return true;
         }
 
-        $plugin = Cleaver::getInstance();
-        $settings = $plugin->getSettings();
-        $minimumEntries = $this->minEntries ?? $settings->minimumEntries;
+        // Get sections from config (same logic as service)
+        $sections = $this->getSectionsFromConfig($config);
+
+        if (empty($sections)) {
+            $this->stderr("Error: No valid sections found.\n", Console::FG_RED);
+            Cleaver::log("No valid sections found for CLI operation", 'cli');
+            return false;
+        }
 
         $this->stdout("\nCleaver Deletion Summary:\n", Console::FG_CYAN);
         $this->stdout(str_repeat("=", 60) . "\n");
 
         foreach ($sections as $section) {
             $totalEntries = Entry::find()->sectionId($section->id)->count();
-            $requestedDeletions = (int) ceil($totalEntries * ($percent / 100));
-            $maxPossibleDeletions = max(0, $totalEntries - $minimumEntries);
+            $requestedDeletions = (int) ceil($totalEntries * ($config->percent / 100));
+            $maxPossibleDeletions = max(0, $totalEntries - $config->minimumEntries);
             $actualDeletions = min($requestedDeletions, $maxPossibleDeletions);
 
             $this->stdout("Section '{$section->handle}': ");
             $this->stdout("{$actualDeletions} of {$totalEntries} entries");
 
             if ($actualDeletions < $requestedDeletions) {
-                $this->stdout(" (limited by minimum: {$minimumEntries})", Console::FG_YELLOW);
+                $this->stdout(" (limited by minimum: {$config->minimumEntries})", Console::FG_YELLOW);
             }
 
             $this->stdout("\n");
         }
 
         $this->stdout(str_repeat("=", 60) . "\n");
-        $this->stdout("Cleaver is about to delete {$percent}% of entries from the selected sections.\n", Console::FG_YELLOW);
-        $this->stdout("Minimum entries per section: {$minimumEntries}", Console::FG_CYAN);
-        if ($this->minEntries !== null) {
-            $this->stdout(" (overridden)", Console::FG_YELLOW);
-        }
+        $this->stdout("Cleaver is about to delete {$config->percent}% of entries from the selected sections.\n", Console::FG_YELLOW);
+        $this->stdout("Minimum entries per section: {$config->minimumEntries}", Console::FG_CYAN);
         $this->stdout("\n");
 
-        if ($targetStatuses !== null) {
-            $this->stdout("Target statuses: " . implode(', ', $targetStatuses), Console::FG_CYAN);
-            $this->stdout(" (specified)", Console::FG_YELLOW);
-        } else {
-            $this->stdout("Target statuses: all statuses", Console::FG_CYAN);
+        if (!empty($config->statuses)) {
+            $this->stdout("Target statuses: " . implode(', ', $config->statuses), Console::FG_CYAN);
+            $this->stdout("\n");
         }
+
+        $deleteMode = $config->softDelete ? 'SOFT DELETE' : 'HARD DELETE';
+        $this->stdout("Delete mode: {$deleteMode}", Console::FG_CYAN);
         $this->stdout("\n");
 
-        return $this->confirm("Do you want to proceed?");
+        if ($config->dryRun) {
+            $this->stdout("DRY RUN: No entries will actually be deleted", Console::FG_CYAN);
+            $this->stdout("\n");
+        }
+
+        $this->stdout("\nConfiguration: " . $config->getSummary(), Console::FG_CYAN);
+        $this->stdout("\n\n");
+
+        return $this->confirm('Are you sure you want to proceed?');
+    }
+
+    /**
+     * Get Section objects from ChopConfig section handles
+     */
+    private function getSectionsFromConfig(ChopConfig $config): array
+    {
+        if (empty($config->sectionHandles)) {
+            // Return all sections if none specified
+            return Craft::$app->entries->getAllSections();
+        }
+
+        $sections = [];
+        foreach ($config->sectionHandles as $handle) {
+            $section = Craft::$app->entries->getSectionByHandle($handle);
+            if ($section) {
+                $sections[] = $section;
+            } else {
+                $this->stderr("Warning: Section '{$handle}' not found.\n", Console::FG_YELLOW);
+            }
+        }
+
+        return $sections;
     }
 
     /**
