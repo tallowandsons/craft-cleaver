@@ -47,10 +47,7 @@ class Cleaver extends Plugin
 
         // Any code that creates an element query or loads Twig should be deferred until
         // after Craft is fully initialized, to avoid conflicts with other plugins/modules
-        Craft::$app->onInit(function () {
-            Cleaver::log('Cleaver plugin initialized', 'plugin');
-            Cleaver::debug('Cleaver plugin debug mode is active', 'plugin');
-        });
+        Craft::$app->onInit(function () {});
     }
 
     protected function createSettingsModel(): ?Model
