@@ -65,7 +65,7 @@
                     label: 'Soft Delete'|t('cleaver'),
                     instructions: 'Use soft delete instead of permanent deletion'|t('cleaver'),
                     name: 'softDelete',
-                    on: settings.deleteMode == 'soft'
+                    on: settings.defaultDeleteMode == constant('tallowandsons\\cleaver\\models\\Settings::DELETE_MODE_SOFT')
                 }) }}
             </div>
 

@@ -60,7 +60,7 @@ class ChopConfig extends Model
         return new self([
             'percent' => $settings->defaultPercent,
             'minimumEntries' => $settings->minimumEntries,
-            'softDelete' => $settings->deleteMode === Settings::DELETE_MODE_SOFT,
+            'softDelete' => $settings->defaultDeleteMode === Settings::DELETE_MODE_SOFT,
         ]);
     }
 

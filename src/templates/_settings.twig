@@ -50,15 +50,15 @@
 }) }}
 
 {{ forms.selectField({
-    label: 'Delete Mode'|t('cleaver'),
-    instructions: 'Choose between soft delete (entries can be restored) or hard delete (entries are permanently removed).'|t('cleaver'),
-    id: 'deleteMode',
-    name: 'deleteMode',
-    value: settings.deleteMode,
+    label: 'Default Delete Mode'|t('cleaver'),
+    instructions: 'Default behavior when running a chop (can be overridden per run). Choose soft delete (restorable) or hard delete (permanent). '|t('cleaver'),
+    id: 'defaultDeleteMode',
+    name: 'defaultDeleteMode',
+    value: settings.defaultDeleteMode,
     options: [
         { value: 'soft', label: 'Soft Delete (Restorable)'|t('cleaver') },
         { value: 'hard', label: 'Hard Delete (Permanent)'|t('cleaver') }
     ],
     required: true,
-    errors: settings.getErrors('deleteMode')
+    errors: settings.getErrors('defaultDeleteMode')
 }) }}

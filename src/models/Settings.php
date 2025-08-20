@@ -46,7 +46,7 @@ class Settings extends Model
     /**
      * The delete mode for entries (soft or hard delete)
      */
-    public string $deleteMode = self::DELETE_MODE_SOFT;
+    public string $defaultDeleteMode = self::DELETE_MODE_SOFT;
 
     /**
      * The log level for Cleaver logging (none, info, or verbose)
@@ -64,8 +64,8 @@ class Settings extends Model
             ['allowedEnvironments', 'default', 'value' => ['dev', 'staging', 'local']],
             ['batchSize', 'integer', 'min' => 1, 'max' => 1000],
             ['batchSize', 'default', 'value' => 50],
-            ['deleteMode', 'in', 'range' => [self::DELETE_MODE_SOFT, self::DELETE_MODE_HARD]],
-            ['deleteMode', 'default', 'value' => self::DELETE_MODE_SOFT],
+            ['defaultDeleteMode', 'in', 'range' => [self::DELETE_MODE_SOFT, self::DELETE_MODE_HARD]],
+            ['defaultDeleteMode', 'default', 'value' => self::DELETE_MODE_SOFT],
             ['logLevel', 'in', 'range' => [self::LOG_LEVEL_NONE, self::LOG_LEVEL_INFO, self::LOG_LEVEL_VERBOSE]],
             ['logLevel', 'default', 'value' => self::LOG_LEVEL_INFO],
         ];
