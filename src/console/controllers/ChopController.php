@@ -261,23 +261,25 @@ class ChopController extends Controller
      */
     private function checkEnvironmentLock($settings): bool
     {
-        $currentEnv = Craft::$app->getConfig()->env ?: 'unknown';
+        $currentEnv = Cleaver::getCurrentEnvironment();
         $allowedEnvironments = $settings->getAllowedEnvironmentsArray();
+        $envLower = strtolower($currentEnv);
+        $allowedLower = array_map('strtolower', $allowedEnvironments);
 
         Cleaver::debug("Environment check - current: '{$currentEnv}', allowed: " . implode(', ', $allowedEnvironments), 'cli');
 
         // Add extra protection for production-like environments
         $productionLikeEnvs = ['production', 'prod', 'live'];
 
-        // If current environment is not in allowed list
-        if (!in_array($currentEnv, $allowedEnvironments, true)) {
+        // If current environment is not in allowed list (case-insensitive)
+        if (!in_array($envLower, $allowedLower, true)) {
             $this->stderr("\n" . str_repeat("!", 60) . "\n", Console::FG_RED);
             $this->stderr("ENVIRONMENT LOCK: Cleaver is not allowed to run in this environment!\n", Console::FG_RED);
             $this->stderr("Current environment: '{$currentEnv}'\n", Console::FG_RED);
             $this->stderr("Allowed environments: " . implode(', ', $allowedEnvironments) . "\n", Console::FG_RED);
 
             // Extra warning for production-like environments
-            if (in_array($currentEnv, $productionLikeEnvs, true)) {
+            if (in_array($envLower, $productionLikeEnvs, true)) {
                 $this->stderr("\nDANGER: This appears to be a PRODUCTION environment!\n", Console::FG_RED);
                 $this->stderr("Running Cleaver in production could cause irreversible data loss!\n", Console::FG_RED);
                 Cleaver::log("CRITICAL: Attempt to run Cleaver in production-like environment '{$currentEnv}'", 'cli');
