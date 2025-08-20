@@ -50,7 +50,7 @@ class CleaverUtility extends Utility
         ];
 
         // Current environment
-        $environment = self::getCurrentEnvironment();
+        $environment = Cleaver::getCurrentEnvironment();
 
         return Craft::$app->view->renderTemplate('cleaver/_utility.twig', [
             'sections' => $sections,
@@ -58,13 +58,5 @@ class CleaverUtility extends Utility
             'settings' => $settings,
             'environment' => $environment,
         ]);
-    }
-
-    /**
-     * Get current environment name
-     */
-    private static function getCurrentEnvironment(): string
-    {
-        return App::env('CRAFT_ENVIRONMENT') ?: 'production';
     }
 }

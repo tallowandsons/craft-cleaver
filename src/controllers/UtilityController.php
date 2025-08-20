@@ -21,14 +21,18 @@ class UtilityController extends Controller
     public function actionChop(): Response
     {
         $this->requirePostRequest();
+        $this->requireAcceptsJson();
         $request = Craft::$app->getRequest();
 
         // Validate environment confirmation
-        $environment = $this->getCurrentEnvironment();
-        $confirmEnvironment = $request->getBodyParam('confirmEnvironment');
+        $environment = strtoupper(Cleaver::getCurrentEnvironment());
+        $confirmEnvironment = strtoupper($request->getBodyParam('confirmEnvironment'));
 
         if ($confirmEnvironment !== $environment) {
-            return $this->asFailure('Environment confirmation does not match. Please type the exact environment name.');
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Environment confirmation does not match. Please type the exact environment name.',
+            ]);
         }
 
         // Build chop configuration from form data
@@ -36,7 +40,10 @@ class UtilityController extends Controller
 
         // Validate configuration
         if (!$config->validate()) {
-            return $this->asFailure('Invalid configuration: ' . implode(', ', $config->getErrorSummary(true)));
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Invalid configuration: ' . implode(', ', $config->getErrorSummary(true)),
+            ]);
         }
 
         try {
@@ -47,10 +54,16 @@ class UtilityController extends Controller
                 ? 'Dry run completed successfully. Check logs for details.'
                 : 'Chop operation completed successfully. Check logs for details.';
 
-            return $this->asSuccess($message);
+            return $this->asJson([
+                'success' => true,
+                'message' => $message,
+            ]);
         } catch (\Exception $e) {
             Cleaver::log('Error during web chop operation: ' . $e->getMessage(), 'error');
-            return $this->asFailure('Error during chop operation: ' . $e->getMessage());
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Error during chop operation: ' . $e->getMessage(),
+            ]);
         }
     }
 
@@ -69,13 +82,5 @@ class UtilityController extends Controller
         $config->verbose = (bool) $request->getBodyParam('verbose', false);
 
         return $config;
-    }
-
-    /**
-     * Get current environment name
-     */
-    private function getCurrentEnvironment(): string
-    {
-        return App::env('CRAFT_ENVIRONMENT') ?: 'production';
     }
 }

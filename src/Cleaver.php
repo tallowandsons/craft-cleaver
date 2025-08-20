@@ -6,14 +6,18 @@ use Craft;
 use craft\base\Model;
 use craft\base\Plugin;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\TemplateEvent;
+use craft\helpers\App;
 use craft\log\Dispatcher;
 use craft\log\MonologTarget;
 use craft\services\Utilities;
+use craft\web\View;
 use Monolog\Formatter\LineFormatter;
 use Psr\Log\LogLevel;
 use tallowandsons\cleaver\models\Settings;
 use tallowandsons\cleaver\services\ChopService;
 use tallowandsons\cleaver\utilities\CleaverUtility;
+use tallowandsons\cleaver\web\assets\cp\CpAsset;
 use yii\base\Event;
 
 /**
@@ -44,6 +48,7 @@ class Cleaver extends Plugin
 
         $this->attachEventHandlers();
         $this->registerLogTarget();
+        $this->registerAssetBundles();
 
         // Any code that creates an element query or loads Twig should be deferred until
         // after Craft is fully initialized, to avoid conflicts with other plugins/modules
@@ -70,6 +75,23 @@ class Cleaver extends Plugin
         Event::on(Utilities::class, Utilities::EVENT_REGISTER_UTILITIES, function (RegisterComponentTypesEvent $event) {
             $event->types[] = CleaverUtility::class;
         });
+    }
+
+    /**
+     * Registers asset bundles
+     */
+    private function registerAssetBundles(): void
+    {
+        // Load CSS before template is rendered
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_TEMPLATE,
+            function (TemplateEvent $event) {
+                if (Craft::$app->getRequest()->getIsCpRequest()) {
+                    Craft::$app->view->registerAssetBundle(CpAsset::class);
+                }
+            }
+        );
     }
 
 
@@ -122,5 +144,17 @@ class Cleaver extends Plugin
     public static function debug(string $message, ?string $category = null): void
     {
         self::log($message, $category, LogLevel::DEBUG);
+    }
+
+    // =======================
+    // ===== MISC STATIC =====
+    // =======================
+
+    /**
+     * Get current environment name
+     */
+    public static function getCurrentEnvironment(): string
+    {
+        return App::env('CRAFT_ENVIRONMENT') ?? App::env('ENVIRONMENT') ?? 'production';
     }
 }
