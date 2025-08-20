@@ -38,6 +38,11 @@ class CleaverUtility extends Utility
         $plugin = Cleaver::getInstance();
         $settings = $plugin->getSettings();
 
+        // If utility is disabled, return empty string
+        if (!$settings->enableUtility) {
+            return '';
+        }
+
         // Get all sections for the dropdown
         $sections = [];
         foreach (Craft::$app->entries->getAllSections() as $section) {

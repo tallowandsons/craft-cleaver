@@ -45,7 +45,7 @@
 
 {{ forms.textField({
     label: 'Batch Size'|t('cleaver'),
-    instructions: 'The number of entries to process in each batch. Larger batches process faster but use more memory.'|t('cleaver'),
+    instructions: 'The number of entries to process in each batch.'|t('cleaver'),
     id: 'batchSize',
     name: 'batchSize',
     value: settings.batchSize,
@@ -59,7 +59,7 @@
 
 {{ forms.selectField({
     label: 'Default Delete Mode'|t('cleaver'),
-    instructions: 'Default behavior when running a chop (can be overridden per run). Choose soft delete (restorable) or hard delete (permanent). '|t('cleaver'),
+    instructions: 'Default behavior when running a chop. Choose soft delete (restorable) or hard delete (permanent). '|t('cleaver'),
     id: 'defaultDeleteMode',
     name: 'defaultDeleteMode',
     value: settings.defaultDeleteMode,
@@ -70,4 +70,14 @@
     required: true,
     errors: settings.getErrors('defaultDeleteMode'),
     warning: (config.defaultDeleteMode is defined ? configWarning('defaultDeleteMode'))
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Cleaver Utility'|t('cleaver'),
+    instructions: 'Show the Cleaver Utility in the Control Panel utilities menu.'|t('cleaver'),
+    id: 'enableUtility',
+    name: 'enableUtility',
+    on: settings.enableUtility,
+    errors: settings.getErrors('enableUtility'),
+    warning: (config.enableUtility is defined ? configWarning('enableUtility')),
 }) }}

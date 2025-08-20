@@ -53,6 +53,11 @@ class Settings extends Model
      */
     public string $logLevel = self::LOG_LEVEL_INFO;
 
+    /**
+     * Whether to show the Cleaver Utility UI in the Control Panel
+     */
+    public bool $enableUtility = true;
+
     public function defineRules(): array
     {
         return [
@@ -68,6 +73,8 @@ class Settings extends Model
             ['defaultDeleteMode', 'default', 'value' => self::DELETE_MODE_SOFT],
             ['logLevel', 'in', 'range' => [self::LOG_LEVEL_NONE, self::LOG_LEVEL_INFO, self::LOG_LEVEL_VERBOSE]],
             ['logLevel', 'default', 'value' => self::LOG_LEVEL_INFO],
+            ['enableUtility', 'boolean'],
+            ['enableUtility', 'default', 'value' => true],
         ];
     }
 

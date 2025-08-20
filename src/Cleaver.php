@@ -74,11 +74,12 @@ class Cleaver extends Plugin
 
     private function attachEventHandlers(): void
     {
-        // Register event handlers here ...
-        // (see https://craftcms.com/docs/5.x/extend/events.html to get started)
-        Event::on(Utilities::class, Utilities::EVENT_REGISTER_UTILITIES, function (RegisterComponentTypesEvent $event) {
-            $event->types[] = CleaverUtility::class;
-        });
+        $settings = $this->getSettings();
+        if ($settings->enableUtility) {
+            Event::on(Utilities::class, Utilities::EVENT_REGISTER_UTILITIES, function (RegisterComponentTypesEvent $event) {
+                $event->types[] = CleaverUtility::class;
+            });
+        }
     }
 
     /**
