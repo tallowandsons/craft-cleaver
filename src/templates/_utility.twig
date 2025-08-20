@@ -2,8 +2,14 @@
 
 {% set currentEnvironment = environment|upper %}
 
-<div id="cleaver-utility">
+<div id="cleaver-utility" data-env="{{ envLower }}" data-allowed="{{ allowedListLower }}" data-allowed-flag="{{ isAllowedEnv ? '1' : '0' }}">
     {% if not sections is empty %}
+        {% if not isAllowedEnv %}
+            <div class="warning-notice cleaver-warning" style="margin-bottom: 16px;">
+                ⚠️ Cleaver is disabled in the <strong>{{ currentEnvironment }}</strong> environment.
+            </div>
+        {% endif %}
+
         <form id="cleaver-form">
             {{ csrfInput() }}
 
@@ -43,19 +49,6 @@
                 }) }}
             </div>
 
-            <div class="field">
-                {{ forms.textField({
-                    label: 'Batch Size'|t('cleaver'),
-                    instructions: 'Number of entries to process per batch'|t('cleaver'),
-                    name: 'batchSize',
-                    value: settings.batchSize,
-                    type: 'number',
-                    min: 1,
-                    max: 1000,
-                    size: 10
-                }) }}
-            </div>
-
             <hr>
 
             <div class="field">
@@ -76,17 +69,10 @@
                 }) }}
             </div>
 
-            <div class="field">
-                {{ forms.lightswitchField({
-                    label: 'Verbose Output'|t('cleaver'),
-                    instructions: 'Enable detailed logging output'|t('cleaver'),
-                    name: 'verbose',
-                    on: false
-                }) }}
-            </div>
+            {# Verbose Output removed: configured in plugin settings only #}
 
             <div class="field" style="margin-top: 30px;">
-                <button type="button" id="run-chop-btn" class="btn submit disabled" disabled>
+                <button type="button" id="run-chop-btn" class="btn submit disabled" disabled aria-disabled="true">
                     {{ 'Run Chop'|t('cleaver') }}
                 </button>
             </div>

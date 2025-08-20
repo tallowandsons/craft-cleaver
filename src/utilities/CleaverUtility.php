@@ -24,7 +24,13 @@ class CleaverUtility extends Utility
 
     public static function icon(): ?string
     {
-        return 'cut';
+        $iconPath = Craft::getAlias('@tallowandsons/cleaver/icon-mask.svg');
+
+        if (!is_string($iconPath)) {
+            return null;
+        }
+
+        return $iconPath;
     }
 
     static function contentHtml(): string
@@ -49,14 +55,22 @@ class CleaverUtility extends Utility
             ['label' => 'Pending', 'value' => 'pending'],
         ];
 
-        // Current environment
+        // Current environment and allowance
         $environment = Cleaver::getCurrentEnvironment();
+        $envLower = strtolower($environment);
+        $allowed = $settings->getAllowedEnvironmentsArray();
+        $allowedLower = array_map('strtolower', $allowed);
+        $isAllowedEnv = in_array($envLower, $allowedLower, true);
+        $allowedListLower = implode(',', $allowedLower);
 
         return Craft::$app->view->renderTemplate('cleaver/_utility.twig', [
             'sections' => $sections,
             'statusOptions' => $statusOptions,
             'settings' => $settings,
             'environment' => $environment,
+            'envLower' => $envLower,
+            'isAllowedEnv' => $isAllowedEnv,
+            'allowedListLower' => $allowedListLower,
         ]);
     }
 }

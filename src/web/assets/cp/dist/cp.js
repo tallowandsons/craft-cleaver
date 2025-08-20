@@ -20,6 +20,20 @@
 
         if (!form || !runBtn) return;
 
+        // Check environment allowance from data attributes
+        const envAllowedFlag = root.getAttribute("data-allowed-flag") === "1";
+        const allowedList = root.getAttribute("data-allowed") || "";
+        if (!envAllowedFlag) {
+            // Keep button disabled and add tooltip
+            runBtn.classList.add("disabled");
+            runBtn.setAttribute("disabled", "");
+            runBtn.setAttribute(
+                "title",
+                "Cleaver is disabled in this environment. Allowed: " +
+                    allowedList
+            );
+        }
+
         // Section checkboxes validation
         function updateRunButton() {
             const checkedSections = form.querySelectorAll(
@@ -45,7 +59,13 @@
         // Run button click
         runBtn.addEventListener("click", function (e) {
             e.preventDefault();
-
+            if (!envAllowedFlag) {
+                Craft.cp.displayError(
+                    "Cleaver is disabled in this environment. Allowed: " +
+                        allowedList
+                );
+                return;
+            }
             if (this.classList.contains("disabled")) {
                 return;
             }
@@ -70,7 +90,9 @@
                 "</li>";
             summaryHtml +=
                 "<li><strong>Mode:</strong> " +
-                (dryRun ? "DRY RUN (simulation)" : "LIVE DELETION") +
+                (dryRun
+                    ? "DRY RUN (simulation)"
+                    : "LIVE DELETION (not a dry run)") +
                 "</li>";
             summaryHtml += "</ul>";
 

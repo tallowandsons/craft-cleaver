@@ -24,11 +24,11 @@ class UtilityController extends Controller
         $this->requireAcceptsJson();
         $request = Craft::$app->getRequest();
 
-        // Validate environment confirmation
-        $environment = strtoupper(Cleaver::getCurrentEnvironment());
-        $confirmEnvironment = strtoupper($request->getBodyParam('confirmEnvironment'));
+        // Validate environment confirmation (case-insensitive compare)
+        $environment = Cleaver::getCurrentEnvironment();
+        $confirmEnvironment = $request->getBodyParam('confirmEnvironment');
 
-        if ($confirmEnvironment !== $environment) {
+        if (strcasecmp($confirmEnvironment ?? '', $environment) !== 0) {
             return $this->asJson([
                 'success' => false,
                 'message' => 'Environment confirmation does not match. Please type the exact environment name.',
@@ -37,6 +37,15 @@ class UtilityController extends Controller
 
         // Build chop configuration from form data
         $config = $this->buildChopConfigFromRequest($request);
+
+        // Enforce allowed environments from settings (server-side safety)
+        $allowed = array_map('strtolower', Cleaver::getInstance()->getSettings()->getAllowedEnvironmentsArray());
+        if (!in_array(strtolower($environment), $allowed, true)) {
+            return $this->asJson([
+                'success' => false,
+                'message' => 'Cleaver is disabled in this environment (' . $environment . '). Allowed: ' . implode(', ', $allowed),
+            ]);
+        }
 
         // Validate configuration
         if (!$config->validate()) {
