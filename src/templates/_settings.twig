@@ -2,28 +2,33 @@
 {# @var settings \tallowandsons\cleaver\models\Settings #}
 
 {% import '_includes/forms.twig' as forms %}
+{% from 'cleaver/macros' import configWarning %}
 
-{{ forms.numberField({
+{{ forms.textField({
     label: 'Default Percentage'|t('cleaver'),
     instructions: 'The default percentage of entries to delete when no percentage is specified in the console command.'|t('cleaver'),
     id: 'defaultPercent',
     name: 'defaultPercent',
     value: settings.defaultPercent,
+    type: 'number',
     min: 1,
     max: 99,
     required: true,
-    errors: settings.getErrors('defaultPercent')
+    errors: settings.getErrors('defaultPercent'),
+    warning: (config.defaultPercent is defined ? configWarning('defaultPercent')),
 }) }}
 
-{{ forms.numberField({
+{{ forms.textField({
     label: 'Minimum Entries'|t('cleaver'),
     instructions: 'The minimum number of entries to keep per section, regardless of deletion percentage. Set to 0 to allow complete deletion.'|t('cleaver'),
     id: 'minimumEntries',
     name: 'minimumEntries',
     value: settings.minimumEntries,
+    type: 'number',
     min: 0,
     required: true,
-    errors: settings.getErrors('minimumEntries')
+    errors: settings.getErrors('minimumEntries'),
+    warning: (config.minimumEntries is defined ? configWarning('minimumEntries')),
 }) }}
 
 {{ forms.textField({
@@ -34,19 +39,22 @@
     value: settings.allowedEnvironments|join(','),
     placeholder: 'dev,staging,local',
     required: true,
-    errors: settings.getErrors('allowedEnvironments')
+    errors: settings.getErrors('allowedEnvironments'),
+    warning: (config.allowedEnvironments is defined ? configWarning('allowedEnvironments')),
 }) }}
 
-{{ forms.numberField({
+{{ forms.textField({
     label: 'Batch Size'|t('cleaver'),
     instructions: 'The number of entries to process in each batch. Larger batches process faster but use more memory.'|t('cleaver'),
     id: 'batchSize',
     name: 'batchSize',
     value: settings.batchSize,
+    type: 'number',
     min: 1,
     max: 1000,
     required: true,
-    errors: settings.getErrors('batchSize')
+    errors: settings.getErrors('batchSize'),
+    warning: (config.batchSize is defined ? configWarning('batchSize')),
 }) }}
 
 {{ forms.selectField({
@@ -60,5 +68,6 @@
         { value: 'hard', label: 'Hard Delete (Permanent)'|t('cleaver') }
     ],
     required: true,
-    errors: settings.getErrors('defaultDeleteMode')
+    errors: settings.getErrors('defaultDeleteMode'),
+    warning: (config.defaultDeleteMode is defined ? configWarning('defaultDeleteMode'))
 }) }}

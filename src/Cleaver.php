@@ -62,9 +62,13 @@ class Cleaver extends Plugin
 
     protected function settingsHtml(): ?string
     {
-        return Craft::$app->view->renderTemplate('cleaver/_settings.twig', [
+        $settings = $this->getSettings();
+        $config = Craft::$app->getConfig()->getConfigFromFile($this->handle);
+
+        return Craft::$app->getView()->renderTemplate($this->handle . '/_settings', [
             'plugin' => $this,
-            'settings' => $this->getSettings(),
+            'settings' => $settings,
+            'config' => $config
         ]);
     }
 

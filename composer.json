@@ -25,7 +25,7 @@
   },
   "extra": {
     "handle": "cleaver",
-    "name": "cleaver",
+    "name": "Cleaver",
     "developer": "tallowandsons",
     "documentationUrl": "https://github.com/tallowandsons/craft-cleaver",
     "class": "tallowandsons\\cleaver\\Cleaver"
