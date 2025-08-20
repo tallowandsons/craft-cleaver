@@ -85,7 +85,10 @@ class UtilityController extends Controller
 
         $config->sectionHandles = $request->getBodyParam('sections', []);
         $config->percent = (int) $request->getBodyParam('percent', $config->percent);
-        $config->statuses = $request->getBodyParam('statuses', []);
+        $postedStatuses = $request->getBodyParam('statuses', null);
+        if ($postedStatuses !== null) {
+            $config->statuses = $postedStatuses;
+        }
         $config->dryRun = (bool) $request->getBodyParam('dryRun', false);
         $config->softDelete = (bool) $request->getBodyParam('softDelete', true);
         $config->verbose = (bool) $request->getBodyParam('verbose', false);

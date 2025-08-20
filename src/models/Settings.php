@@ -34,6 +34,12 @@ class Settings extends Model
     public int $minimumEntries = 1;
 
     /**
+     * Default entry statuses to include when none are specified
+     * e.g. ['live', 'disabled']
+     */
+    public array $defaultStatuses = ['live'];
+
+    /**
      * Environments where Cleaver is allowed to run
      */
     public array $allowedEnvironments = ['dev', 'staging', 'local'];
@@ -65,6 +71,8 @@ class Settings extends Model
             ['defaultPercent', 'default', 'value' => 90],
             ['minimumEntries', 'integer', 'min' => 0],
             ['minimumEntries', 'default', 'value' => 1],
+            ['defaultStatuses', 'each', 'rule' => ['string']],
+            ['defaultStatuses', 'default', 'value' => ['live']],
             ['allowedEnvironments', 'each', 'rule' => ['string']],
             ['allowedEnvironments', 'default', 'value' => ['dev', 'staging', 'local']],
             ['batchSize', 'integer', 'min' => 1, 'max' => 1000],
@@ -95,6 +103,18 @@ class Settings extends Model
             $this->allowedEnvironments = array_map('trim', array_filter(explode(',', $value)));
         } elseif (is_array($value)) {
             $this->allowedEnvironments = array_filter($value);
+        }
+    }
+
+    /**
+     * Set default statuses from a comma-separated string or array
+     */
+    public function setDefaultStatuses($value): void
+    {
+        if (is_string($value)) {
+            $this->defaultStatuses = array_map('trim', array_filter(explode(',', $value)));
+        } elseif (is_array($value)) {
+            $this->defaultStatuses = array_filter($value);
         }
     }
 }

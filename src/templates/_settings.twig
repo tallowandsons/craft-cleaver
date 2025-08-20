@@ -4,6 +4,8 @@
 {% import '_includes/forms.twig' as forms %}
 {% from 'cleaver/macros' import configWarning %}
 
+<h2 class="heading">{{ 'Defaults'|t('cleaver') }}</h2>
+
 {{ forms.textField({
     label: 'Default Percentage'|t('cleaver'),
     instructions: 'The default percentage of entries to delete when no percentage is specified in the console command.'|t('cleaver'),
@@ -32,29 +34,14 @@
 }) }}
 
 {{ forms.textField({
-    label: 'Allowed Environments'|t('cleaver'),
-    instructions: 'Comma-separated list of environments where Cleaver is allowed to run. Cleaver will be completely blocked in other environments.'|t('cleaver'),
-    id: 'allowedEnvironments',
-    name: 'allowedEnvironments',
-    value: settings.allowedEnvironments|join(','),
-    placeholder: 'dev,staging,local',
-    required: true,
-    errors: settings.getErrors('allowedEnvironments'),
-    warning: (config.allowedEnvironments is defined ? configWarning('allowedEnvironments')),
-}) }}
-
-{{ forms.textField({
-    label: 'Batch Size'|t('cleaver'),
-    instructions: 'The number of entries to process in each batch.'|t('cleaver'),
-    id: 'batchSize',
-    name: 'batchSize',
-    value: settings.batchSize,
-    type: 'number',
-    min: 1,
-    max: 1000,
-    required: true,
-    errors: settings.getErrors('batchSize'),
-    warning: (config.batchSize is defined ? configWarning('batchSize')),
+    label: 'Default Statuses'|t('cleaver'),
+    instructions: 'Comma-separated list of default entry statuses to include (e.g. live,disabled,draft).'|t('cleaver'),
+    id: 'defaultStatuses',
+    name: 'defaultStatuses',
+    value: settings.defaultStatuses|join(','),
+    placeholder: 'live,disabled',
+    errors: settings.getErrors('defaultStatuses'),
+    warning: (config.defaultStatuses is defined ? configWarning('defaultStatuses')),
 }) }}
 
 {{ forms.selectField({
@@ -71,6 +58,41 @@
     errors: settings.getErrors('defaultDeleteMode'),
     warning: (config.defaultDeleteMode is defined ? configWarning('defaultDeleteMode'))
 }) }}
+
+<hr>
+<h2 class="heading">{{ 'Safety'|t('cleaver') }}</h2>
+
+{{ forms.textField({
+    label: 'Allowed Environments'|t('cleaver'),
+    instructions: 'Comma-separated list of environments where Cleaver is allowed to run. Cleaver will be completely blocked in other environments.'|t('cleaver'),
+    id: 'allowedEnvironments',
+    name: 'allowedEnvironments',
+    value: settings.allowedEnvironments|join(','),
+    placeholder: 'dev,staging,local',
+    required: true,
+    errors: settings.getErrors('allowedEnvironments'),
+    warning: (config.allowedEnvironments is defined ? configWarning('allowedEnvironments')),
+}) }}
+
+<hr>
+<h2 class="heading">{{ 'Performance'|t('cleaver') }}</h2>
+
+{{ forms.textField({
+    label: 'Batch Size'|t('cleaver'),
+    instructions: 'The number of entries to process in each batch.'|t('cleaver'),
+    id: 'batchSize',
+    name: 'batchSize',
+    value: settings.batchSize,
+    type: 'number',
+    min: 1,
+    max: 1000,
+    required: true,
+    errors: settings.getErrors('batchSize'),
+    warning: (config.batchSize is defined ? configWarning('batchSize')),
+}) }}
+
+<hr>
+<h2 class="heading">{{ 'Interface'|t('cleaver') }}</h2>
 
 {{ forms.lightswitchField({
     label: 'Enable Cleaver Utility'|t('cleaver'),
