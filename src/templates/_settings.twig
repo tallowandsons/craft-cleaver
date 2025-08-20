@@ -35,11 +35,11 @@
 
 {{ forms.textField({
     label: 'Default Statuses'|t('cleaver'),
-    instructions: 'Comma-separated list of default entry statuses to include (e.g. live,disabled,draft).'|t('cleaver'),
+    instructions: 'Comma-separated list of default entry statuses to include (live, pending, expired, disabled).'|t('cleaver'),
     id: 'defaultStatuses',
     name: 'defaultStatuses',
     value: settings.defaultStatuses|join(','),
-    placeholder: 'live,disabled',
+    placeholder: 'live,pending,expired,disabled',
     errors: settings.getErrors('defaultStatuses'),
     warning: (config.defaultStatuses is defined ? configWarning('defaultStatuses')),
 }) }}

@@ -71,7 +71,7 @@ class Settings extends Model
             ['defaultPercent', 'default', 'value' => 90],
             ['minimumEntries', 'integer', 'min' => 0],
             ['minimumEntries', 'default', 'value' => 1],
-            ['defaultStatuses', 'each', 'rule' => ['string']],
+            ['defaultStatuses', 'each', 'rule' => ['in', 'range' => ['live', 'pending', 'expired', 'disabled']]],
             ['defaultStatuses', 'default', 'value' => ['live']],
             ['allowedEnvironments', 'each', 'rule' => ['string']],
             ['allowedEnvironments', 'default', 'value' => ['dev', 'staging', 'local']],

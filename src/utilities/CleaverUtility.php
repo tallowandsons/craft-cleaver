@@ -52,12 +52,12 @@ class CleaverUtility extends Utility
             ];
         }
 
-        // Entry status options
+        // Entry status options (valid Craft entry statuses)
         $statusOptions = [
             ['label' => 'Live', 'value' => 'live'],
-            ['label' => 'Disabled', 'value' => 'disabled'],
-            ['label' => 'Draft', 'value' => 'draft'],
             ['label' => 'Pending', 'value' => 'pending'],
+            ['label' => 'Expired', 'value' => 'expired'],
+            ['label' => 'Disabled', 'value' => 'disabled'],
         ];
 
         // Current environment and allowance
