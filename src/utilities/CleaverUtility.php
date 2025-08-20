@@ -72,6 +72,7 @@ class CleaverUtility extends Utility
             'sections' => $sections,
             'statusOptions' => $statusOptions,
             'settings' => $settings,
+            'selectedSections' => $settings->defaultSections,
             'environment' => $environment,
             'envLower' => $envLower,
             'isAllowedEnv' => $isAllowedEnv,

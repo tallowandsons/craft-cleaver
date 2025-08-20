@@ -58,6 +58,7 @@ class ChopConfig extends Model
         $settings = Cleaver::getInstance()->getSettings();
 
         return new self([
+            'sectionHandles' => $settings->defaultSections,
             'percent' => $settings->defaultPercent,
             'minimumEntries' => $settings->minimumEntries,
             'statuses' => $settings->defaultStatuses,

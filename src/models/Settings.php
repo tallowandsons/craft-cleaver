@@ -40,6 +40,12 @@ class Settings extends Model
     public array $defaultStatuses = ['live'];
 
     /**
+     * Default section handles to include when none are specified
+     * e.g. ['blog', 'news']
+     */
+    public array $defaultSections = [];
+
+    /**
      * Environments where Cleaver is allowed to run
      */
     public array $allowedEnvironments = ['dev', 'staging', 'local'];
@@ -75,6 +81,8 @@ class Settings extends Model
             ['defaultStatuses', 'default', 'value' => ['live']],
             ['allowedEnvironments', 'each', 'rule' => ['string']],
             ['allowedEnvironments', 'default', 'value' => ['dev', 'staging', 'local']],
+            ['defaultSections', 'each', 'rule' => ['string']],
+            ['defaultSections', 'default', 'value' => []],
             ['batchSize', 'integer', 'min' => 1, 'max' => 1000],
             ['batchSize', 'default', 'value' => 50],
             ['defaultDeleteMode', 'in', 'range' => [self::DELETE_MODE_SOFT, self::DELETE_MODE_HARD]],
@@ -115,6 +123,18 @@ class Settings extends Model
             $this->defaultStatuses = array_map('trim', array_filter(explode(',', $value)));
         } elseif (is_array($value)) {
             $this->defaultStatuses = array_filter($value);
+        }
+    }
+
+    /**
+     * Set default sections from a comma-separated string or array
+     */
+    public function setDefaultSections($value): void
+    {
+        if (is_string($value)) {
+            $this->defaultSections = array_map('trim', array_filter(explode(',', $value)));
+        } elseif (is_array($value)) {
+            $this->defaultSections = array_filter($value);
         }
     }
 }

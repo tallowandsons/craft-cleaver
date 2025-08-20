@@ -44,6 +44,17 @@
     warning: (config.defaultStatuses is defined ? configWarning('defaultStatuses')),
 }) }}
 
+{{ forms.textField({
+    label: 'Default Sections'|t('cleaver'),
+    instructions: 'Comma-separated list of default section handles to include when none are selected.'|t('cleaver'),
+    id: 'defaultSections',
+    name: 'defaultSections',
+    value: settings.defaultSections|join(','),
+    placeholder: 'blog,news',
+    errors: settings.getErrors('defaultSections'),
+    warning: (config.defaultSections is defined ? configWarning('defaultSections')),
+}) }}
+
 {{ forms.selectField({
     label: 'Default Delete Mode'|t('cleaver'),
     instructions: 'Default behavior when running a chop. Choose soft delete (restorable) or hard delete (permanent). '|t('cleaver'),

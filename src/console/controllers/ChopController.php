@@ -15,7 +15,7 @@ use yii\helpers\Console;
  */
 class ChopController extends Controller
 {
-    public $defaultAction = 'index';
+    public $defaultAction = 'entries';
 
     /**
      * Comma-separated list of section handles to target
@@ -56,7 +56,7 @@ class ChopController extends Controller
     {
         $options = parent::options($actionID);
         switch ($actionID) {
-            case 'index':
+            case 'entries':
                 $options[] = 'sections';
                 $options[] = 'statuses';
                 $options[] = 'percent';
@@ -92,7 +92,7 @@ class ChopController extends Controller
      * The command is protected by an environment lock and will only run in
      * specifically allowed environments configured in plugin settings.
      */
-    public function actionIndex(): int
+    public function actionEntries(): int
     {
         $plugin = Cleaver::getInstance();
         $settings = $plugin->getSettings();

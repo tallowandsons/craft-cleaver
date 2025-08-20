@@ -83,7 +83,10 @@ class UtilityController extends Controller
     {
         $config = ChopConfig::fromDefaults();
 
-        $config->sectionHandles = $request->getBodyParam('sections', []);
+        $postedSections = $request->getBodyParam('sections', null);
+        if ($postedSections !== null) {
+            $config->sectionHandles = $postedSections;
+        }
         $config->percent = (int) $request->getBodyParam('percent', $config->percent);
         $postedStatuses = $request->getBodyParam('statuses', null);
         if ($postedStatuses !== null) {
