@@ -114,3 +114,22 @@
     errors: settings.getErrors('enableUtility'),
     warning: (config.enableUtility is defined ? configWarning('enableUtility')),
 }) }}
+
+<hr>
+<h2 class="heading">{{ 'Logging'|t('cleaver') }}</h2>
+
+{{ forms.selectField({
+    label: 'Log Level'|t('cleaver'),
+    instructions: 'How much Cleaver logs during runs. Info logs key actions; Verbose logs detailed progress.'|t('cleaver'),
+    id: 'logLevel',
+    name: 'logLevel',
+    value: settings.logLevel,
+    options: [
+        { value: 'none', label: 'None'|t('cleaver') },
+        { value: 'info', label: 'Info'|t('cleaver') },
+        { value: 'verbose', label: 'Verbose'|t('cleaver') }
+    ],
+    required: true,
+    errors: settings.getErrors('logLevel'),
+    warning: (config.logLevel is defined ? configWarning('logLevel'))
+}) }}
