@@ -16,7 +16,7 @@ class ChopConfig extends Model
     public array $sectionHandles = [];
 
     /**
-     * Percentage of entries to delete (1-99)
+     * Percentage of entries to delete (1-100)
      */
     public int $percent = 90;
 
@@ -80,7 +80,7 @@ class ChopConfig extends Model
         return [
             ['sectionHandles', 'each', 'rule' => ['string']],
             ['sectionHandles', 'default', 'value' => []],
-            ['percent', 'integer', 'min' => 1, 'max' => 99],
+            ['percent', 'integer', 'min' => 1, 'max' => 100],
             ['percent', 'default', 'value' => 90],
             ['statuses', 'each', 'rule' => ['string']],
             ['statuses', 'default', 'value' => []],

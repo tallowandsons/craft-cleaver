@@ -23,7 +23,7 @@ return [
     // =========================================================================
 
     // The default percentage of entries to delete when none is specified
-    // Range: 1-99
+    // Range: 1-100 (minimum entries per section always preserved)
     // 'defaultPercent' => 90,
 
     // The minimum number of entries to keep per section (regardless of percentage)

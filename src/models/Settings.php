@@ -73,7 +73,7 @@ class Settings extends Model
     public function defineRules(): array
     {
         return [
-            ['defaultPercent', 'integer', 'min' => 1, 'max' => 99],
+            ['defaultPercent', 'integer', 'min' => 1, 'max' => 100],
             ['defaultPercent', 'default', 'value' => 90],
             ['minimumEntries', 'integer', 'min' => 0],
             ['minimumEntries', 'default', 'value' => 1],

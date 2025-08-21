@@ -28,12 +28,12 @@
             <div class="field">
                 {{ forms.textField({
                     label: 'Percent to Remove'|t('cleaver'),
-                    instructions: 'Percentage of entries to delete (1-99)'|t('cleaver'),
+                    instructions: 'Percentage of entries to delete (1-100). Minimum entries per section is always preserved.'|t('cleaver'),
                     name: 'percent',
                     value: settings.defaultPercent,
                     type: 'number',
                     min: 1,
-                    max: 99,
+                    max: 100,
                     required: true,
                     size: 10
                 }) }}
