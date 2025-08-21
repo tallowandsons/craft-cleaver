@@ -152,6 +152,7 @@ class ChopService extends Component
             ->sectionId($section->id)
             ->status($status)
             ->select(['id'])
+            ->site('*')
             ->column();
 
         // Shuffle and take the required number

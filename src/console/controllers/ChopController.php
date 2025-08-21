@@ -193,7 +193,7 @@ class ChopController extends Controller
         $this->stdout(str_repeat("=", 60) . "\n");
 
         foreach ($sections as $section) {
-            $totalEntries = Entry::find()->sectionId($section->id)->count();
+            $totalEntries = Entry::find()->sectionId($section->id)->site('*')->anyStatus()->count();
             $requestedDeletions = (int) ceil($totalEntries * ($config->percent / 100));
             $maxPossibleDeletions = max(0, $totalEntries - $config->minimumEntries);
             $actualDeletions = min($requestedDeletions, $maxPossibleDeletions);
