@@ -95,6 +95,56 @@ class Settings extends Model
     }
 
     /**
+     * Normalized default sections as an array.
+     * - 'all' (string, any case) => [] (meaning no filter / all)
+     * - CSV string => array of trimmed handles
+     * - array => filtered array
+     */
+    public function getDefaultSectionsArray(): array
+    {
+        $value = $this->defaultSections;
+        if (is_string($value)) {
+            if (strcasecmp(trim($value), 'all') === 0) {
+                return [];
+            }
+            return array_map('trim', array_filter(explode(',', $value)));
+        }
+        if (is_array($value)) {
+            $lower = array_map(fn($v) => is_string($v) ? strtolower(trim($v)) : $v, $value);
+            if (in_array('all', $lower, true)) {
+                return [];
+            }
+            return array_values(array_filter($value));
+        }
+        return [];
+    }
+
+    /**
+     * Normalized default statuses as an array.
+     * - 'all' (string, any case) => [] (meaning no filter / all)
+     * - CSV string => array of trimmed statuses
+     * - array => filtered array
+     */
+    public function getDefaultStatusesArray(): array
+    {
+        $value = $this->defaultStatuses;
+        if (is_string($value)) {
+            if (strcasecmp(trim($value), 'all') === 0) {
+                return [];
+            }
+            return array_map('trim', array_filter(explode(',', $value)));
+        }
+        if (is_array($value)) {
+            $lower = array_map(fn($v) => is_string($v) ? strtolower(trim($v)) : $v, $value);
+            if (in_array('all', $lower, true)) {
+                return [];
+            }
+            return array_values(array_filter($value));
+        }
+        return [];
+    }
+
+    /**
      * Get the allowed environments as an array
      */
     public function getAllowedEnvironmentsArray(): array
@@ -120,9 +170,19 @@ class Settings extends Model
     public function setDefaultStatuses($value): void
     {
         if (is_string($value)) {
+            if (strcasecmp(trim($value), 'all') === 0) {
+                // Empty array means all statuses (no filter)
+                $this->defaultStatuses = [];
+                return;
+            }
             $this->defaultStatuses = array_map('trim', array_filter(explode(',', $value)));
         } elseif (is_array($value)) {
-            $this->defaultStatuses = array_filter($value);
+            $lower = array_map(fn($v) => is_string($v) ? strtolower(trim($v)) : $v, $value);
+            if (in_array('all', $lower, true)) {
+                $this->defaultStatuses = [];
+                return;
+            }
+            $this->defaultStatuses = array_values(array_filter($value));
         }
     }
 
@@ -132,9 +192,19 @@ class Settings extends Model
     public function setDefaultSections($value): void
     {
         if (is_string($value)) {
+            if (strcasecmp(trim($value), 'all') === 0) {
+                // Empty array means all sections (no filter)
+                $this->defaultSections = [];
+                return;
+            }
             $this->defaultSections = array_map('trim', array_filter(explode(',', $value)));
         } elseif (is_array($value)) {
-            $this->defaultSections = array_filter($value);
+            $lower = array_map(fn($v) => is_string($v) ? strtolower(trim($v)) : $v, $value);
+            if (in_array('all', $lower, true)) {
+                $this->defaultSections = [];
+                return;
+            }
+            $this->defaultSections = array_values(array_filter($value));
         }
     }
 }

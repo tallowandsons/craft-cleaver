@@ -31,8 +31,8 @@ Settings (defaults in parentheses):
 
 - defaultPercent (90) — Percent of entries to delete when none specified (1–100).
 - minimumEntries (1) — Minimum entries to keep per section
-- defaultStatuses (["live"]) — Default statuses to target: live, pending, expired, disabled
-- defaultSections ([]) — Default section handles to target when none specified
+- defaultStatuses (["live"]) — Default statuses to target: live, pending, expired, disabled. Use `all` to include all.
+- defaultSections ([]) — Default section handles to target when none specified. Use `all` to include all.
 - allowedEnvironments (["dev","staging","local"]) — Only these environments can run Cleaver
 - batchSize (50) — Queue batch size per job
 - defaultDeleteMode ("soft") — "soft" (restorable) or "hard" (permanent)
@@ -46,8 +46,8 @@ Example `config/cleaver.php`:
 return [
 	'defaultPercent' => 90,
 	'minimumEntries' => 1,
-	'defaultStatuses' => ['live'],
-	'defaultSections' => [],
+	'defaultStatuses' => ['live'], // or 'all'
+	'defaultSections' => [],       // or 'all'
 	'allowedEnvironments' => ['dev', 'staging', 'local'],
 	'batchSize' => 50,
 	'defaultDeleteMode' => 'soft', // 'hard' to permanently delete
@@ -77,8 +77,8 @@ php craft cleaver/chop/entries [options]
 
 Options:
 
-- `--sections|-s=blog,news` — Comma‑separated section handles (default: all)
-- `--statuses|-st=live,disabled` — Comma‑separated statuses (default: from settings)
+- `--sections|-s=blog,news|all` — Section handles or `all` (default: all)
+- `--statuses|-st=live,disabled|all` — Statuses or `all` (default: from settings)
 - `--percent|-p=25` — Percent to delete (default: from settings)
 - `--min-entries|-m=5` — Minimum entries to keep per section (default: from settings)
 - `--dry-run|-d` — Log planned deletions only

@@ -18,12 +18,12 @@ class ChopController extends Controller
     public $defaultAction = 'entries';
 
     /**
-     * Comma-separated list of section handles to target
+     * Comma-separated list of section handles to target, or 'all'
      */
     public ?string $sections = null;
 
     /**
-     * Comma-separated list of entry statuses to target (live, disabled, pending, etc)
+     * Comma-separated list of entry statuses to target (live, disabled, pending, etc), or 'all'
      */
     public ?string $statuses = null;
 
@@ -152,7 +152,13 @@ class ChopController extends Controller
     private function populateConfigFromCliOptions(ChopConfig $config): void
     {
         if ($this->sections !== null) {
-            $config->sectionHandles = array_map('trim', explode(',', $this->sections));
+            $sectionsArg = trim((string)$this->sections);
+            if (strcasecmp($sectionsArg, 'all') === 0) {
+                // Explicitly target all sections (override defaults)
+                $config->sectionHandles = [];
+            } else {
+                $config->sectionHandles = array_map('trim', array_filter(explode(',', $sectionsArg)));
+            }
         }
 
         if ($this->percent !== null) {
@@ -160,7 +166,13 @@ class ChopController extends Controller
         }
 
         if ($this->statuses !== null) {
-            $config->statuses = array_map('trim', explode(',', $this->statuses));
+            $statusesArg = trim((string)$this->statuses);
+            if (strcasecmp($statusesArg, 'all') === 0) {
+                // Explicitly target all statuses (override defaults)
+                $config->statuses = [];
+            } else {
+                $config->statuses = array_map('trim', array_filter(explode(',', $statusesArg)));
+            }
         }
 
         if ($this->minEntries !== null) {

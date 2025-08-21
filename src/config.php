@@ -31,11 +31,11 @@ return [
     // 'minimumEntries' => 1,
 
     // Default entry statuses to include when none are specified
-    // Valid: live, pending, expired, disabled
+    // Valid: live, pending, expired, disabled — or 'all' to include all
     // 'defaultStatuses' => ['live'],
 
     // Default section handles to include when none are specified
-    // e.g. ['blog', 'news']
+    // e.g. ['blog', 'news'] — or 'all' to include all
     // 'defaultSections' => [],
 
     // Default delete mode for entries (can be overridden per run)

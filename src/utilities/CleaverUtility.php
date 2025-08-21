@@ -45,11 +45,13 @@ class CleaverUtility extends Utility
 
         // Get all sections for the dropdown
         $sections = [];
+        $allSectionHandles = [];
         foreach (Craft::$app->entries->getAllSections() as $section) {
             $sections[] = [
                 'label' => $section->name,
                 'value' => $section->handle,
             ];
+            $allSectionHandles[] = $section->handle;
         }
 
         // Entry status options (valid Craft entry statuses)
@@ -59,6 +61,15 @@ class CleaverUtility extends Utility
             ['label' => 'Expired', 'value' => 'expired'],
             ['label' => 'Disabled', 'value' => 'disabled'],
         ];
+
+        $allStatusValues = array_map(fn($o) => $o['value'], $statusOptions);
+
+        // Normalize defaults and preselect "all" when empty
+        $defaultsSections = method_exists($settings, 'getDefaultSectionsArray') ? $settings->getDefaultSectionsArray() : (array) $settings->defaultSections;
+        $defaultsStatuses = method_exists($settings, 'getDefaultStatusesArray') ? $settings->getDefaultStatusesArray() : (array) $settings->defaultStatuses;
+
+        $selectedSections = !empty($defaultsSections) ? $defaultsSections : $allSectionHandles;
+        $selectedStatuses = !empty($defaultsStatuses) ? $defaultsStatuses : $allStatusValues;
 
         // Current environment and allowance
         $environment = Cleaver::getCurrentEnvironment();
@@ -72,7 +83,8 @@ class CleaverUtility extends Utility
             'sections' => $sections,
             'statusOptions' => $statusOptions,
             'settings' => $settings,
-            'selectedSections' => $settings->defaultSections,
+            'selectedSections' => $selectedSections,
+            'selectedStatuses' => $selectedStatuses,
             'environment' => $environment,
             'envLower' => $envLower,
             'isAllowedEnv' => $isAllowedEnv,

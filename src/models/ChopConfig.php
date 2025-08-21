@@ -57,11 +57,15 @@ class ChopConfig extends Model
     {
         $settings = Cleaver::getInstance()->getSettings();
 
+        // Normalize defaults (support 'all' as empty arrays)
+        $defaultSections = method_exists($settings, 'getDefaultSectionsArray') ? $settings->getDefaultSectionsArray() : (array) $settings->defaultSections;
+        $defaultStatuses = method_exists($settings, 'getDefaultStatusesArray') ? $settings->getDefaultStatusesArray() : (array) $settings->defaultStatuses;
+
         return new self([
-            'sectionHandles' => $settings->defaultSections,
+            'sectionHandles' => $defaultSections,
             'percent' => $settings->defaultPercent,
             'minimumEntries' => $settings->minimumEntries,
-            'statuses' => $settings->defaultStatuses,
+            'statuses' => $defaultStatuses,
             'softDelete' => $settings->defaultDeleteMode === Settings::DELETE_MODE_SOFT,
         ]);
     }
