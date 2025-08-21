@@ -74,9 +74,8 @@ class CleaverUtility extends Utility
         // Current environment and allowance
         $environment = Cleaver::getCurrentEnvironment();
         $envLower = strtolower($environment);
-        $allowed = $settings->getAllowedEnvironmentsArray();
-        $allowedLower = array_map('strtolower', $allowed);
-        $isAllowedEnv = in_array($envLower, $allowedLower, true);
+        $allowedLower = array_map('strtolower', $settings->getAllowedEnvironmentsArray());
+        $isAllowedEnv = Cleaver::isEnvironmentAllowed($environment);
         $allowedListLower = implode(',', $allowedLower);
 
         return Craft::$app->view->renderTemplate('cleaver/_utility.twig', [

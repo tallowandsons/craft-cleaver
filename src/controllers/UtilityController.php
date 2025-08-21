@@ -39,11 +39,10 @@ class UtilityController extends Controller
         $config = $this->buildChopConfigFromRequest($request);
 
         // Enforce allowed environments from settings (server-side safety)
-        $allowed = array_map('strtolower', Cleaver::getInstance()->getSettings()->getAllowedEnvironmentsArray());
-        if (!in_array(strtolower($environment), $allowed, true)) {
+        if (!Cleaver::isEnvironmentAllowed($environment)) {
             return $this->asJson([
                 'success' => false,
-                'message' => 'Cleaver is disabled in this environment (' . $environment . '). Allowed: ' . implode(', ', $allowed),
+                'message' => 'Cleaver is disabled in this environment (' . $environment . '). Allowed: ' . implode(', ', Cleaver::getInstance()->getSettings()->getAllowedEnvironmentsArray()),
             ]);
         }
 

@@ -75,7 +75,8 @@ class Cleaver extends Plugin
     private function attachEventHandlers(): void
     {
         $settings = $this->getSettings();
-        if ($settings->enableUtility) {
+
+        if ($settings->enableUtility && self::isEnvironmentAllowed()) {
             Event::on(Utilities::class, Utilities::EVENT_REGISTER_UTILITIES, function (RegisterComponentTypesEvent $event) {
                 $event->types[] = CleaverUtility::class;
             });
@@ -161,5 +162,16 @@ class Cleaver extends Plugin
     public static function getCurrentEnvironment(): string
     {
         return App::env('CRAFT_ENVIRONMENT') ?? App::env('ENVIRONMENT') ?? 'production';
+    }
+
+    /**
+     * Check if an environment is allowed to run Cleaver (case-insensitive).
+     * If no environment is provided, the current environment is used.
+     */
+    public static function isEnvironmentAllowed(?string $environment = null): bool
+    {
+        $env = $environment ?? self::getCurrentEnvironment();
+        $allowed = array_map('strtolower', self::getInstance()->getSettings()->getAllowedEnvironmentsArray());
+        return in_array(strtolower($env), $allowed, true);
     }
 }
